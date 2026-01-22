@@ -1,0 +1,55 @@
+{
+  "workflowApiVersion": "1.1",
+  "metaData": {
+    "icon": "icon.png",
+    "category": "custom"
+  },
+  "type": "REST",
+  "lang": {
+    "en-US": {
+      "name": "Vercel Demo Activity",
+      "description": "Demo REST Activity hosted on Vercel"
+    }
+  },
+  "arguments": {
+    "execute": {
+        "inArguments": [
+          { "request_id": "{{Event.request_id}}" },
+          { "contact_key": "{{Event.contact_key}}" },
+          { "phone_number": "{{Event.phone_number}}" },
+          { "status": "{{Event.status}}" },
+          { "created_at": "{{Event.created_at}}" },
+          { "updated_at": "{{Event.updated_at}}" }
+        ],
+        "outArguments": [],
+        "url": "https://sfmc-custom-activity-vercel.vercel.app/api/execute"
+    }
+  },
+  "configurationArguments": {
+    "applicationExtensionKey": "c1dad13e-ef98-4d7b-887b-f9b75991f479",
+    "save": {
+      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/save",
+      "useJwt": false
+    },
+    "publish": {
+      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/publish",
+      "useJwt": false
+    },
+    "validate": {
+      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/validate",
+      "useJwt": false
+    },
+    "stop": {
+      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/stop",
+      "useJwt": false
+    }
+  },
+  "userInterfaces": {
+    "configModal": {
+      "url": "https://sfmc-custom-activity-vercel.vercel.app/",
+      "height": 600,
+      "width": 800,
+      "fullscreen": false
+    }
+  }
+}

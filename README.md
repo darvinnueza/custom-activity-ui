@@ -1,1 +1,1 @@
-# custom-activity-ui
+# sfmc-custom-activity-vercel
