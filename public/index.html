@@ -8,8 +8,19 @@
 <body>
     <h1>Genesys Campaign Selector</h1>
 
-    <p>Custom Activity UI loaded correctly.</p>
+    <div class="card">
+        <label>Campaign ID</label>
+        <input id="campaignId" type="text" placeholder="CMP_..." />
 
-    <!-- En el siguiente paso aquí entra Postmonger -->
+        <label>Campaign Name</label>
+        <input id="campaignName" type="text" placeholder="My Campaign" />
+
+        <div class="hint">
+            (En el siguiente paso esto se llenará desde Genesys, por ahora es manual)
+        </div>
+    </div>
+
+    <script src="postmonger.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
