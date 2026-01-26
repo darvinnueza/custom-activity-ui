@@ -1,0 +1,51 @@
+{
+    "workflowApiVersion": "1.1",
+    "metaData": {
+        "icon": "icon.png",
+        "category": "custom"
+    },
+    "type": "REST",
+    "lang": {
+        "en-US": {
+            "name": "Genesys Campaign Selector",
+            "description": "Select Genesys Campaign for outbound execution"
+        }
+    },
+    "arguments": {
+        "execute": {
+            "inArguments": [
+                { "campaignId": "{{Activity.campaignId}}" },
+                { "campaignName": "{{Activity.campaignName}}" }
+            ],
+            "outArguments": [],
+            "url": "https://custom-activity-service.vercel.app/api/execute"
+        }
+    },
+    "configurationArguments": {
+        "applicationExtensionKey": "c1dad13e-ef98-4d7b-887b-f9b75991f479",
+        "save": {
+            "url": "https://custom-activity-service.vercel.app/api/save",
+            "useJwt": false
+        },
+        "publish": {
+            "url": "https://custom-activity-service.vercel.app/api/publish",
+            "useJwt": false
+        },
+        "validate": {
+            "url": "https://custom-activity-service.vercel.app/api/validate",
+            "useJwt": false
+        },
+        "stop": {
+            "url": "https://custom-activity-service.vercel.app/api/stop",
+            "useJwt": false
+        }
+    },
+    "userInterfaces": {
+        "configModal": {
+            "url": "https://custom-activity-ui-tau.vercel.app/",
+            "height": 600,
+            "width": 800,
+            "fullscreen": false
+        }
+    }
+}
