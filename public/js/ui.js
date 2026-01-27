@@ -27,6 +27,9 @@
   let savedCampaignId = "";
   let savedDivisionId = "";
 
+  // ENV (ya viene cargado por <script src="/api/env">)
+  const DEFAULT_DIVISION_ID = (window.__ENV__?.DEFAULT_DIVISION_ID || "").trim();
+
   function setStatus(text, kind /* "ok" | "err" | "" */) {
     if (!status) return;
     status.textContent = text || "";
@@ -36,32 +39,32 @@
   }
 
   function getDivisionId() {
-    // 1) desde lo guardado en SFMC
+    // 1) desde SFMC (guardado)
     if (savedDivisionId) return savedDivisionId;
 
-    // 2) fallback querystring ?divisionId=
+    // 2) querystring manual
     const qs = new URLSearchParams(window.location.search);
     const q = qs.get("divisionId");
     if (q) return q;
+
+    // 3) fallback desde Vercel env (DEFAULT_DIVISION_ID)
+    if (DEFAULT_DIVISION_ID) return DEFAULT_DIVISION_ID;
 
     return "";
   }
 
   async function fetchJSON(url, options) {
     const res = await fetch(url, options);
-    const txt = await res.text().catch(() => "");
-    let body = null;
-    try {
-      body = txt ? JSON.parse(txt) : null;
-    } catch {
-      body = { raw: txt };
-    }
-
     if (!res.ok) {
-      const msg = body?.error || body?.message || body?.details || txt || "Error";
-      throw new Error(`HTTP ${res.status} - ${msg}`);
+      const txt = await res.text().catch(() => "");
+      let msg = txt;
+      try {
+        const j = JSON.parse(txt);
+        msg = j?.error || j?.message || j?.details || txt;
+      } catch {}
+      throw new Error(`HTTP ${res.status} - ${msg || "Error"}`);
     }
-    return body;
+    return res.json();
   }
 
   // -------------------------
@@ -115,66 +118,16 @@
   function onNewListNameChange() {
     if (!chk.checked) btnCreate.disabled = true;
     else btnCreate.disabled = !(inp.value.trim().length > 0);
-
     refreshNextButton();
   }
 
   // -------------------------
-  // Create contact list (POST -> proxy /api/genesys/contactlists)
-  // -------------------------
-  async function onCreateClick() {
-    try {
-      const name = inp.value.trim();
-      if (!name) return;
-
-      const divisionId = getDivisionId();
-      if (!divisionId) {
-        setStatus("Falta divisionId (SFMC o ?divisionId=...)", "err");
-        return;
-      }
-
-      setStatus("Creando lista...", "");
-      btnCreate.disabled = true;
-
-      const payload = {
-        name,
-        columnNames: ["request_id", "contact_key", "phone_number", "status"],
-        phoneColumns: [{ columnName: "phone_number", type: "cell" }],
-      };
-
-      const data = await fetchJSON(
-        `/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const opt = document.createElement("option");
-      opt.value = data.id;
-      opt.textContent = data.name;
-      select.appendChild(opt);
-
-      chk.checked = false;
-      toggleNewListInput();
-      select.value = data.id;
-
-      setStatus(`Lista creada: ${data.name}`, "ok");
-      refreshNextButton();
-    } catch (e) {
-      setStatus(e.message, "err");
-      btnCreate.disabled = false;
-    }
-  }
-
-  // -------------------------
-  // Load contact lists (GET -> proxy /api/genesys/contactlists)
+  // Load contact lists (PROXY UI -> /api/genesys/contactlists)
   // -------------------------
   async function loadContactLists() {
     const divisionId = getDivisionId();
     if (!divisionId) {
-      setStatus("Falta divisionId (SFMC o ?divisionId=...)", "err");
+      setStatus("Falta divisionId (SFMC o ?divisionId=... o DEFAULT_DIVISION_ID).", "err");
       select.innerHTML = `<option value="">Sin divisionId</option>`;
       select.disabled = true;
       return;
@@ -185,9 +138,7 @@
     select.disabled = true;
 
     try {
-      const data = await fetchJSON(
-        `/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`
-      );
+      const data = await fetchJSON(`/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`);
 
       select.innerHTML = `<option value="">Seleccione una lista...</option>`;
       (data || []).forEach((item) => {
@@ -209,47 +160,6 @@
   }
 
   // -------------------------
-  // Load campaigns (GET -> proxy /api/genesys/campaigns)
-  // -------------------------
-  let campaignsLoaded = false;
-  async function loadCampaignsOnce() {
-    if (campaignsLoaded) return;
-    campaignsLoaded = true;
-
-    const divisionId = getDivisionId();
-    if (!divisionId) {
-      setStatus("Falta divisionId para cargar campañas.", "err");
-      campaignSelect.innerHTML = `<option value="">Sin divisionId</option>`;
-      campaignSelect.disabled = true;
-      return;
-    }
-
-    campaignSelect.innerHTML = `<option value="">Cargando...</option>`;
-    campaignSelect.disabled = true;
-
-    try {
-      const data = await fetchJSON(
-        `/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`
-      );
-
-      campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
-      (data || []).forEach((c) => {
-        const opt = document.createElement("option");
-        opt.value = c.id;
-        opt.textContent = c.name;
-        campaignSelect.appendChild(opt);
-      });
-
-      if (savedCampaignId) campaignSelect.value = savedCampaignId;
-      campaignSelect.disabled = false;
-    } catch (e) {
-      setStatus(`Error cargando campañas: ${e.message}`, "err");
-      campaignSelect.innerHTML = `<option value="">Error cargando campañas</option>`;
-      campaignSelect.disabled = true;
-    }
-  }
-
-  // -------------------------
   // SFMC init + save
   // -------------------------
   connection.on("initActivity", function (data) {
@@ -257,7 +167,7 @@
 
     savedContactListId = args.contactListId || "";
     savedCampaignId = args.campaignId || "";
-    savedDivisionId = args.divisionId || "";
+    savedDivisionId = args.divisionId || ""; // <- si SFMC lo manda
 
     chk.checked = !!args.useNewList;
     inp.value = args.newListName || "";
@@ -279,13 +189,12 @@
               contactListId: select.value,
               useNewList: chk.checked,
               newListName: chk.checked ? inp.value : "",
-              campaignId: campaignSelect ? campaignSelect.value : "",
-            },
-          ],
-        },
-      },
+              campaignId: campaignSelect ? campaignSelect.value : ""
+            }
+          ]
+        }
+      }
     };
-
     connection.trigger("updateActivity", payload);
   }
 
@@ -298,12 +207,11 @@
     select.addEventListener("change", refreshNextButton);
 
     btnCreate.disabled = true;
-    btnCreate.addEventListener("click", onCreateClick);
 
     btnNext.addEventListener("click", async () => {
       if (!canGoNext()) return;
       goTo(2);
-      await loadCampaignsOnce();
+      // campañas después, no meto más cosas aquí
     });
 
     btnBack.addEventListener("click", () => goTo(1));

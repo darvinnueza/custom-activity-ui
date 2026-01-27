@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Custom Activity UI — VoiceBot</title>
+
+    <!-- ESTILOS -->
     <link rel="stylesheet" href="styles.css" />
   </head>
 
@@ -12,6 +14,10 @@
 
     <div class="container">
       <div class="card">
+
+        <!-- ===================== -->
+        <!-- STEP 1: CONTACT LISTS -->
+        <!-- ===================== -->
         <section id="stepContact">
           <h2>Configuración de Lista de Contactos</h2>
           <p class="subtitle">
@@ -36,6 +42,7 @@
           </div>
 
           <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
+
           <small id="createStatus" class="status"></small>
 
           <div class="nav">
@@ -43,6 +50,9 @@
           </div>
         </section>
 
+        <!-- ===================== -->
+        <!-- STEP 2: CAMPAIGN      -->
+        <!-- ===================== -->
         <section id="stepCampaign" style="display:none;">
           <h2>Configuración de Campaña</h2>
           <p class="subtitle">
@@ -59,9 +69,16 @@
           </div>
         </section>
 
+        <!-- Postmonger + bridge -->
         <script src="js/postmonger.js"></script>
         <script src="js/customActivity.js"></script>
+
+        <!-- ✅ ENV: esto define window.__ENV__ -->
+        <script src="/api/env"></script>
+
+        <!-- ✅ UI -->
         <script src="js/ui.js"></script>
+
       </div>
     </div>
   </body>
