@@ -233,9 +233,7 @@
     campaignSelect.disabled = true;
 
     try {
-      const data = await fetchJSON(
-        `/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`
-      );
+      const data = await fetchJSON(`/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`);
 
       campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
       (data || []).forEach((c) => {
