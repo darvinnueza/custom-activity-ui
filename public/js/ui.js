@@ -30,6 +30,9 @@
   // ENV (ya viene cargado por <script src="/api/env">)
   const DEFAULT_DIVISION_ID = (window.__ENV__?.DEFAULT_DIVISION_ID || "").trim();
 
+  // -------------------------
+  // UI helpers
+  // -------------------------
   function setStatus(text, kind /* "ok" | "err" | "" */) {
     if (!status) return;
     status.textContent = text || "";
@@ -47,7 +50,7 @@
     const q = qs.get("divisionId");
     if (q) return q;
 
-    // 3) fallback desde Vercel env (DEFAULT_DIVISION_ID)
+    // 3) fallback desde Vercel env
     if (DEFAULT_DIVISION_ID) return DEFAULT_DIVISION_ID;
 
     return "";
@@ -68,7 +71,7 @@
   }
 
   // -------------------------
-  // Helpers: Wizard
+  // Wizard helpers
   // -------------------------
   function goTo(step) {
     if (step === 1) {
@@ -127,7 +130,10 @@
   async function loadContactLists() {
     const divisionId = getDivisionId();
     if (!divisionId) {
-      setStatus("Falta divisionId (SFMC o ?divisionId=... o DEFAULT_DIVISION_ID).", "err");
+      setStatus(
+        "Falta divisionId (SFMC o ?divisionId=... o DEFAULT_DIVISION_ID).",
+        "err"
+      );
       select.innerHTML = `<option value="">Sin divisionId</option>`;
       select.disabled = true;
       return;
@@ -138,7 +144,9 @@
     select.disabled = true;
 
     try {
-      const data = await fetchJSON(`/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`);
+      const data = await fetchJSON(
+        `/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`
+      );
 
       select.innerHTML = `<option value="">Seleccione una lista...</option>`;
       (data || []).forEach((item) => {
@@ -156,6 +164,56 @@
       setStatus(`Error cargando listas: ${e.message}`, "err");
       select.innerHTML = `<option value="">Error cargando listas</option>`;
       select.disabled = true;
+    }
+  }
+
+  // -------------------------
+  // Create contact list (PROXY UI -> /api/genesys/contactlists-create)
+  // -------------------------
+  async function onCreateClick() {
+    try {
+      const divisionId = getDivisionId();
+      if (!divisionId) throw new Error("Falta divisionId para crear lista.");
+
+      const name = inp.value.trim();
+      if (!name) return;
+
+      setStatus("Creando lista...", "");
+      btnCreate.disabled = true;
+
+      const payload = {
+        name,
+        columnNames: ["request_id", "contact_key", "phone_number", "status"],
+        phoneColumns: [{ columnName: "phone_number", type: "cell" }],
+      };
+
+      const data = await fetchJSON(
+        `/api/genesys/contactlists-create?divisionId=${encodeURIComponent(
+          divisionId
+        )}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      // agregar al combo
+      const opt = document.createElement("option");
+      opt.value = data.id;
+      opt.textContent = data.name;
+      select.appendChild(opt);
+
+      // volver a modo existente y seleccionar
+      chk.checked = false;
+      toggleNewListInput();
+      select.value = data.id;
+
+      setStatus(`Lista creada: ${data.name}`, "ok");
+      refreshNextButton();
+    } catch (e) {
+      setStatus(e.message, "err");
+      btnCreate.disabled = false;
     }
   }
 
@@ -189,11 +247,11 @@
               contactListId: select.value,
               useNewList: chk.checked,
               newListName: chk.checked ? inp.value : "",
-              campaignId: campaignSelect ? campaignSelect.value : ""
-            }
-          ]
-        }
-      }
+              campaignId: campaignSelect ? campaignSelect.value : "",
+            },
+          ],
+        },
+      },
     };
     connection.trigger("updateActivity", payload);
   }
@@ -207,6 +265,7 @@
     select.addEventListener("change", refreshNextButton);
 
     btnCreate.disabled = true;
+    btnCreate.addEventListener("click", onCreateClick);
 
     btnNext.addEventListener("click", async () => {
       if (!canGoNext()) return;
