@@ -155,7 +155,7 @@
     select.innerHTML = `<option value="">Cargando...</option>`;
     select.disabled = true;
 
-    const res = await fetch("/api/ui/contactlists");
+    const res = await fetch("/api/genesys/contactlists");
     const data = await res.json();
 
     select.innerHTML = `<option value="">Seleccione una lista...</option>`;
