@@ -2,16 +2,6 @@
 (function () {
   const connection = new Postmonger.Session();
 
-  // =========================
-  // ENV (NO hardcode)
-  // =========================
-  const SERVICE_BASE = window.__ENV__?.SERVICE_BASE;
-  if (!SERVICE_BASE) {
-    // Esto es intencional: si no está, el deploy está mal configurado
-    // (no hay SERVICE_BASE en Vercel)
-    console.error("Missing window.__ENV__.SERVICE_BASE. Did you generate public/env.js?");
-  }
-
   // STEP containers
   const stepContact = document.getElementById("stepContact");
   const stepCampaign = document.getElementById("stepCampaign");
@@ -37,8 +27,55 @@
   let savedCampaignId = "";
   let savedDivisionId = "";
 
+  // ===== ENV =====
+  const SERVICE_BASE = (window.__ENV__?.SERVICE_BASE || "").replace(/\/$/, "");
+
+  function setStatus(text, kind /* "ok" | "err" | "" */) {
+    if (!status) return;
+    status.textContent = text || "";
+    status.className = "status";
+    if (kind === "ok") status.className = "status ok";
+    if (kind === "err") status.className = "status err";
+  }
+
+  function requireServiceBase() {
+    if (!SERVICE_BASE) {
+      setStatus(
+        "SERVICE_BASE no está configurado. Revisa /api/env y la env var en Vercel.",
+        "err"
+      );
+      throw new Error("Missing SERVICE_BASE");
+    }
+  }
+
+  function getDivisionId() {
+    // 1) desde SFMC (lo ideal)
+    if (savedDivisionId) return savedDivisionId;
+
+    // 2) fallback: querystring ?divisionId=...
+    const qs = new URLSearchParams(window.location.search);
+    const q = qs.get("divisionId");
+    if (q) return q;
+
+    return "";
+  }
+
+  async function fetchJSON(url, options) {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      let msg = txt;
+      try {
+        const j = JSON.parse(txt);
+        msg = j?.error || j?.message || j?.details || txt;
+      } catch {}
+      throw new Error(`HTTP ${res.status} - ${msg || "Error"}`);
+    }
+    return res.json();
+  }
+
   // -------------------------
-  // Helpers
+  // Helpers: Wizard
   // -------------------------
   function goTo(step) {
     if (step === 1) {
@@ -58,50 +95,6 @@
   function refreshNextButton() {
     if (!btnNext) return;
     btnNext.disabled = !canGoNext();
-  }
-
-  function setStatus(text, kind /* "ok" | "err" | "" */) {
-    if (!status) return;
-    status.textContent = text || "";
-    status.className = "status";
-    if (kind === "ok") status.className = "status ok";
-    if (kind === "err") status.className = "status err";
-  }
-
-  function getDivisionId() {
-    // 1) desde SFMC (lo ideal)
-    if (savedDivisionId) return savedDivisionId;
-
-    // 2) fallback opcional: querystring (?divisionId=...)
-    const qs = new URLSearchParams(window.location.search);
-    const q = qs.get("divisionId");
-    if (q) return q;
-
-    return "";
-  }
-
-  function requireServiceBase() {
-    if (!SERVICE_BASE) {
-      throw new Error("SERVICE_BASE no está configurado (window.__ENV__.SERVICE_BASE). Revisa env.js / Vercel env var.");
-    }
-  }
-
-  function requireDivisionId() {
-    const divisionId = getDivisionId();
-    if (!divisionId) {
-      throw new Error("Falta divisionId. Debe venir desde SFMC (args.divisionId) o por querystring (?divisionId=...).");
-    }
-    return divisionId;
-  }
-
-  async function safeJson(res) {
-    const text = await res.text().catch(() => "");
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { raw: text };
-    }
   }
 
   // -------------------------
@@ -139,7 +132,7 @@
   }
 
   // -------------------------
-  // Create contact list (POST -> SERVICE)
+  // Create contact list (POST al SERVICE)
   // -------------------------
   async function onCreateClick() {
     try {
@@ -157,19 +150,11 @@
         phoneColumns: [{ columnName: "phone_number", type: "cell" }]
       };
 
-      const res = await fetch(`${SERVICE_BASE}/genesys/contactlists`, {
+      const data = await fetchJSON(`${SERVICE_BASE}/genesys/contactlists`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload)
       });
-
-      if (!res.ok) {
-        const j = await safeJson(res);
-        const msg = j?.error || j?.message || j?.details || j?.raw || `Error creando lista (${res.status})`;
-        throw new Error(msg);
-      }
-
-      const data = await res.json();
 
       // agregar al combo
       const opt = document.createElement("option");
@@ -177,11 +162,9 @@
       opt.textContent = data.name;
       select.appendChild(opt);
 
-      // volver a modo existente
+      // volver a modo existente y seleccionar
       chk.checked = false;
       toggleNewListInput();
-
-      // seleccionar la creada
       select.value = data.id;
 
       setStatus(`Lista creada: ${data.name}`, "ok");
@@ -193,41 +176,48 @@
   }
 
   // -------------------------
-  // Load contact lists (GET -> SERVICE) [REQUIERE divisionId]
+  // Load contact lists (GET al SERVICE)
   // -------------------------
   async function loadContactLists() {
     requireServiceBase();
-    const divisionId = requireDivisionId();
 
+    const divisionId = getDivisionId();
+    if (!divisionId) {
+      setStatus("Falta divisionId. Debe venir desde SFMC o por ?divisionId=...", "err");
+      select.innerHTML = `<option value="">Sin divisionId</option>`;
+      select.disabled = true;
+      return;
+    }
+
+    setStatus("", "");
     select.innerHTML = `<option value="">Cargando...</option>`;
     select.disabled = true;
 
-    const url = `${SERVICE_BASE}/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`;
-    const res = await fetch(url);
+    try {
+      const url = `${SERVICE_BASE}/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`;
+      const data = await fetchJSON(url);
 
-    if (!res.ok) {
-      const j = await safeJson(res);
-      const msg = j?.error || j?.message || j?.details || j?.raw || `Error cargando contactlists (${res.status})`;
-      throw new Error(msg);
+      select.innerHTML = `<option value="">Seleccione una lista...</option>`;
+      (data || []).forEach((item) => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.name;
+        select.appendChild(opt);
+      });
+
+      if (savedContactListId && !chk.checked) select.value = savedContactListId;
+
+      select.disabled = false;
+      toggleNewListInput();
+    } catch (e) {
+      setStatus(`Error cargando listas: ${e.message}`, "err");
+      select.innerHTML = `<option value="">Error cargando listas</option>`;
+      select.disabled = true;
     }
-
-    const data = await res.json();
-
-    select.innerHTML = `<option value="">Seleccione una lista...</option>`;
-    data.forEach((item) => {
-      const opt = document.createElement("option");
-      opt.value = item.id;
-      opt.textContent = item.name;
-      select.appendChild(opt);
-    });
-
-    if (savedContactListId && !chk.checked) select.value = savedContactListId;
-
-    toggleNewListInput();
   }
 
   // -------------------------
-  // Load campaigns (GET -> SERVICE) [REQUIERE divisionId]
+  // Load campaigns (GET al SERVICE)
   // -------------------------
   let campaignsLoaded = false;
   async function loadCampaignsOnce() {
@@ -235,33 +225,37 @@
     campaignsLoaded = true;
 
     requireServiceBase();
-    const divisionId = requireDivisionId();
+
+    const divisionId = getDivisionId();
+    if (!divisionId) {
+      setStatus("Falta divisionId para cargar campañas.", "err");
+      campaignSelect.innerHTML = `<option value="">Sin divisionId</option>`;
+      campaignSelect.disabled = true;
+      return;
+    }
 
     campaignSelect.innerHTML = `<option value="">Cargando...</option>`;
     campaignSelect.disabled = true;
 
-    const url = `${SERVICE_BASE}/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`;
-    const res = await fetch(url);
+    try {
+      const url = `${SERVICE_BASE}/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`;
+      const data = await fetchJSON(url);
 
-    if (!res.ok) {
-      const j = await safeJson(res);
-      const msg = j?.error || j?.message || j?.details || j?.raw || `Error cargando campañas (${res.status})`;
-      throw new Error(msg);
+      campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
+      (data || []).forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        campaignSelect.appendChild(opt);
+      });
+
+      if (savedCampaignId) campaignSelect.value = savedCampaignId;
+      campaignSelect.disabled = false;
+    } catch (e) {
+      setStatus(`Error cargando campañas: ${e.message}`, "err");
+      campaignSelect.innerHTML = `<option value="">Error cargando campañas</option>`;
+      campaignSelect.disabled = true;
     }
-
-    const data = await res.json();
-
-    campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
-    data.forEach((c) => {
-      const opt = document.createElement("option");
-      opt.value = c.id;
-      opt.textContent = c.name;
-      campaignSelect.appendChild(opt);
-    });
-
-    if (savedCampaignId) campaignSelect.value = savedCampaignId;
-
-    campaignSelect.disabled = false;
   }
 
   // -------------------------
@@ -270,11 +264,9 @@
   connection.on("initActivity", function (data) {
     const args = data?.arguments?.execute?.inArguments?.[0] || {};
 
-    // OJO: aquí es donde debe venir divisionId desde Journey (recomendado)
-    savedDivisionId = args.divisionId || "";
-
     savedContactListId = args.contactListId || "";
     savedCampaignId = args.campaignId || "";
+    savedDivisionId = args.divisionId || ""; // 👈 IMPORTANTE
 
     chk.checked = !!args.useNewList;
     inp.value = args.newListName || "";
@@ -292,9 +284,7 @@
         execute: {
           inArguments: [
             {
-              // Guardamos división también para que no dependas del querystring
-              divisionId: getDivisionId(),
-
+              divisionId: getDivisionId(),            // 👈 guardamos divisionId
               contactListId: select.value,
               useNewList: chk.checked,
               newListName: chk.checked ? inp.value : "",
@@ -312,6 +302,11 @@
   // DOM Ready
   // -------------------------
   document.addEventListener("DOMContentLoaded", async () => {
+    // chequeo rápido
+    if (!SERVICE_BASE) {
+      setStatus("SERVICE_BASE vacío. Verifica /api/env.", "err");
+    }
+
     chk.addEventListener("change", toggleNewListInput);
     inp.addEventListener("input", onNewListNameChange);
     select.addEventListener("change", refreshNextButton);
@@ -322,11 +317,7 @@
     btnNext.addEventListener("click", async () => {
       if (!canGoNext()) return;
       goTo(2);
-      try {
-        await loadCampaignsOnce();
-      } catch (e) {
-        console.error(e);
-      }
+      await loadCampaignsOnce();
     });
 
     btnBack.addEventListener("click", () => goTo(1));
@@ -334,10 +325,7 @@
     try {
       await loadContactLists();
       connection.trigger("ready");
-    } catch (e) {
-      console.error(e);
-      select.innerHTML = `<option>Error cargando listas</option>`;
-      setStatus(e.message || "Error cargando listas", "err");
+    } catch {
       connection.trigger("ready");
     }
   });
