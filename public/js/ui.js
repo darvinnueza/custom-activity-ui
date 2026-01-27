@@ -42,15 +42,12 @@
   }
 
   function getDivisionId() {
-    // 1) desde SFMC (guardado)
     if (savedDivisionId) return savedDivisionId;
 
-    // 2) querystring manual
     const qs = new URLSearchParams(window.location.search);
     const q = qs.get("divisionId");
     if (q) return q;
 
-    // 3) fallback desde Vercel env
     if (DEFAULT_DIVISION_ID) return DEFAULT_DIVISION_ID;
 
     return "";
@@ -125,7 +122,7 @@
   }
 
   // -------------------------
-  // Load contact lists (PROXY UI -> /api/genesys/contactlists)
+  // Load contact lists (UI proxy)
   // -------------------------
   async function loadContactLists() {
     const divisionId = getDivisionId();
@@ -168,7 +165,7 @@
   }
 
   // -------------------------
-  // Create contact list (PROXY UI -> /api/genesys/contactlists-create)
+  // Create contact list (UI proxy)
   // -------------------------
   async function onCreateClick() {
     try {
@@ -193,18 +190,19 @@
         )}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
           body: JSON.stringify(payload),
         }
       );
 
-      // agregar al combo
       const opt = document.createElement("option");
       opt.value = data.id;
       opt.textContent = data.name;
       select.appendChild(opt);
 
-      // volver a modo existente y seleccionar
       chk.checked = false;
       toggleNewListInput();
       select.value = data.id;
@@ -218,6 +216,52 @@
   }
 
   // -------------------------
+  // Load campaigns (UI proxy) ✅ AQUÍ ESTÁ LO QUE TE FALTA
+  // -------------------------
+  let campaignsLoaded = false;
+
+  async function loadCampaigns() {
+    const divisionId = getDivisionId();
+    if (!divisionId) {
+      setStatus("Falta divisionId para cargar campañas.", "err");
+      campaignSelect.innerHTML = `<option value="">Sin divisionId</option>`;
+      campaignSelect.disabled = true;
+      return;
+    }
+
+    campaignSelect.innerHTML = `<option value="">Cargando...</option>`;
+    campaignSelect.disabled = true;
+
+    try {
+      const data = await fetchJSON(
+        `/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`
+      );
+
+      campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
+      (data || []).forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        campaignSelect.appendChild(opt);
+      });
+
+      if (savedCampaignId) campaignSelect.value = savedCampaignId;
+
+      campaignSelect.disabled = false;
+    } catch (e) {
+      setStatus(`Error cargando campañas: ${e.message}`, "err");
+      campaignSelect.innerHTML = `<option value="">Error cargando campañas</option>`;
+      campaignSelect.disabled = true;
+    }
+  }
+
+  async function loadCampaignsOnce() {
+    if (campaignsLoaded) return;
+    campaignsLoaded = true;
+    await loadCampaigns();
+  }
+
+  // -------------------------
   // SFMC init + save
   // -------------------------
   connection.on("initActivity", function (data) {
@@ -225,7 +269,7 @@
 
     savedContactListId = args.contactListId || "";
     savedCampaignId = args.campaignId || "";
-    savedDivisionId = args.divisionId || ""; // <- si SFMC lo manda
+    savedDivisionId = args.divisionId || "";
 
     chk.checked = !!args.useNewList;
     inp.value = args.newListName || "";
@@ -270,7 +314,7 @@
     btnNext.addEventListener("click", async () => {
       if (!canGoNext()) return;
       goTo(2);
-      // campañas después, no meto más cosas aquí
+      await loadCampaignsOnce(); // ✅ ESTO HACE QUE CARGUE
     });
 
     btnBack.addEventListener("click", () => goTo(1));
