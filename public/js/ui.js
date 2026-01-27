@@ -55,16 +55,33 @@
 
   async function fetchJSON(url, options) {
     const res = await fetch(url, options);
+    const txt = await res.text().catch(() => "");
+
     if (!res.ok) {
-      const txt = await res.text().catch(() => "");
       let msg = txt;
       try {
-        const j = JSON.parse(txt);
+        const j = txt ? JSON.parse(txt) : null;
         msg = j?.error || j?.message || j?.details || txt;
       } catch {}
       throw new Error(`HTTP ${res.status} - ${msg || "Error"}`);
     }
-    return res.json();
+
+    if (!txt) return null;
+    try {
+      return JSON.parse(txt);
+    } catch {
+      // si por alguna razón no devuelve JSON válido
+      return null;
+    }
+  }
+
+  function normalizeListResponse(data) {
+    // Acepta: [ ... ]  o  { entities: [ ... ] }  o  { items: [ ... ] }
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.entities)) return data.entities;
+    if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray(data?.results)) return data.results;
+    return [];
   }
 
   // -------------------------
@@ -127,10 +144,7 @@
   async function loadContactLists() {
     const divisionId = getDivisionId();
     if (!divisionId) {
-      setStatus(
-        "Falta divisionId (SFMC o ?divisionId=... o DEFAULT_DIVISION_ID).",
-        "err"
-      );
+      setStatus("Falta divisionId (SFMC o ?divisionId=... o DEFAULT_DIVISION_ID).", "err");
       select.innerHTML = `<option value="">Sin divisionId</option>`;
       select.disabled = true;
       return;
@@ -141,12 +155,11 @@
     select.disabled = true;
 
     try {
-      const data = await fetchJSON(
-        `/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`
-      );
+      const raw = await fetchJSON(`/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`);
+      const list = normalizeListResponse(raw);
 
       select.innerHTML = `<option value="">Seleccione una lista...</option>`;
-      (data || []).forEach((item) => {
+      list.forEach((item) => {
         const opt = document.createElement("option");
         opt.value = item.id;
         opt.textContent = item.name;
@@ -185,9 +198,7 @@
       };
 
       const data = await fetchJSON(
-        `/api/genesys/contactlists-create?divisionId=${encodeURIComponent(
-          divisionId
-        )}`,
+        `/api/genesys/contactlists-create?divisionId=${encodeURIComponent(divisionId)}`,
         {
           method: "POST",
           headers: {
@@ -198,11 +209,13 @@
         }
       );
 
+      // agregar al combo
       const opt = document.createElement("option");
       opt.value = data.id;
       opt.textContent = data.name;
       select.appendChild(opt);
 
+      // volver a modo existente y seleccionar
       chk.checked = false;
       toggleNewListInput();
       select.value = data.id;
@@ -216,7 +229,7 @@
   }
 
   // -------------------------
-  // Load campaigns (UI proxy) ✅ AQUÍ ESTÁ LO QUE TE FALTA
+  // Load campaigns (UI proxy) ✅ ARREGLADO
   // -------------------------
   let campaignsLoaded = false;
 
@@ -233,10 +246,11 @@
     campaignSelect.disabled = true;
 
     try {
-      const data = await fetchJSON(`/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`);
+      const raw = await fetchJSON(`/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`);
+      const campaigns = normalizeListResponse(raw);
 
       campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
-      (data || []).forEach((c) => {
+      campaigns.forEach((c) => {
         const opt = document.createElement("option");
         opt.value = c.id;
         opt.textContent = c.name;
@@ -312,7 +326,7 @@
     btnNext.addEventListener("click", async () => {
       if (!canGoNext()) return;
       goTo(2);
-      await loadCampaignsOnce(); // ✅ ESTO HACE QUE CARGUE
+      await loadCampaignsOnce(); // ✅ aquí carga campañas
     });
 
     btnBack.addEventListener("click", () => goTo(1));
