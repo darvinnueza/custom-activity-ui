@@ -78,33 +78,19 @@
             </div>
             </section>
 
+            <!-- ===================== -->
+            <!-- SCRIPTS -->
+            <!-- ===================== -->
+
             <!-- Postmonger + bridge -->
             <script src="js/postmonger.js"></script>
             <script src="js/customActivity.js"></script>
 
-            <!-- ✅ 1) Cargar ENV desde backend (Vercel server-side) -->
-            <script>
-                // disponible para ui.js
-                window.__ENV__ = window.__ENV__ || {};
+            <!-- ✅ 1) ENV desde Vercel (api/env.js) -->
+            <script src="/api/env.js"></script>
 
-                (async function () {
-                    try {
-                    const r = await fetch("/api/env", { cache: "no-store" });
-                    if (r.ok) {
-                        window.__ENV__ = await r.json();
-                    } else {
-                        console.error("No se pudo cargar /api/env:", r.status);
-                    }
-                    } catch (e) {
-                    console.error("Error cargando /api/env:", e);
-                    } finally {
-                    // ✅ 2) cargar ui.js SOLO cuando env ya intentó cargar
-                    const s = document.createElement("script");
-                    s.src = "js/ui.js";
-                    document.body.appendChild(s);
-                    }
-                })();
-            </script>
+            <!-- ✅ 2) UI (lee window.__ENV__) -->
+            <script src="js/ui.js"></script>
 
         </div>
         </div>

@@ -27,8 +27,28 @@
   let savedCampaignId = "";
   let savedDivisionId = "";
 
-  // ===== ENV =====
-  const SERVICE_BASE = (window.__ENV__?.SERVICE_BASE || "").replace(/\/$/, "");
+  // =========================
+  // ENV helpers
+  // =========================
+  function env() {
+    return window.__ENV__ || {};
+  }
+
+  function getServiceBase() {
+    const v = (env().SERVICE_BASE || "").trim().replace(/\/+$/, "");
+    if (!v) throw new Error("SERVICE_BASE vacío. Revisa /api/env.js y Vercel env + redeploy.");
+    return v;
+  }
+
+  function getServiceToken() {
+    const v = (env().SERVICE_TOKEN || "").trim();
+    if (!v) throw new Error("SERVICE_TOKEN vacío. Debe ser el Bearer token para tu service.");
+    return v;
+  }
+
+  function getDefaultDivisionId() {
+    return (env().DEFAULT_DIVISION_ID || "").trim();
+  }
 
   function setStatus(text, kind /* "ok" | "err" | "" */) {
     if (!status) return;
@@ -38,30 +58,25 @@
     if (kind === "err") status.className = "status err";
   }
 
-  function requireServiceBase() {
-    if (!SERVICE_BASE) {
-      setStatus(
-        "SERVICE_BASE no está configurado. Revisa /api/env y la env var en Vercel.",
-        "err"
-      );
-      throw new Error("Missing SERVICE_BASE");
-    }
-  }
-
   function getDivisionId() {
     // 1) desde SFMC (lo ideal)
     if (savedDivisionId) return savedDivisionId;
 
-    // 2) fallback: querystring ?divisionId=...
+    // 2) querystring ?divisionId=...
     const qs = new URLSearchParams(window.location.search);
     const q = qs.get("divisionId");
     if (q) return q;
 
+    // 3) DEFAULT_DIVISION_ID (fallback)
+    const d = getDefaultDivisionId();
+    if (d) return d;
+
     return "";
   }
 
-  async function fetchJSON(url, options) {
+  async function fetchJSON(url, options = {}) {
     const res = await fetch(url, options);
+
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
       let msg = txt;
@@ -71,7 +86,24 @@
       } catch {}
       throw new Error(`HTTP ${res.status} - ${msg || "Error"}`);
     }
-    return res.json();
+
+    // puede venir JSON o vacío
+    const text = await res.text();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  function authHeaders(extra = {}) {
+    const token = getServiceToken();
+    return {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      ...extra,
+    };
   }
 
   // -------------------------
@@ -136,7 +168,7 @@
   // -------------------------
   async function onCreateClick() {
     try {
-      requireServiceBase();
+      const base = getServiceBase();
 
       const name = inp.value.trim();
       if (!name) return;
@@ -147,13 +179,13 @@
       const payload = {
         name,
         columnNames: ["request_id", "contact_key", "phone_number", "status"],
-        phoneColumns: [{ columnName: "phone_number", type: "cell" }]
+        phoneColumns: [{ columnName: "phone_number", type: "cell" }],
       };
 
-      const data = await fetchJSON(`${SERVICE_BASE}/genesys/contactlists`, {
+      const data = await fetchJSON(`${base}/genesys/contactlists`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload)
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
       });
 
       // agregar al combo
@@ -179,11 +211,11 @@
   // Load contact lists (GET al SERVICE)
   // -------------------------
   async function loadContactLists() {
-    requireServiceBase();
+    const base = getServiceBase();
 
     const divisionId = getDivisionId();
     if (!divisionId) {
-      setStatus("Falta divisionId. Debe venir desde SFMC o por ?divisionId=...", "err");
+      setStatus("Falta divisionId. Debe venir desde SFMC o por ?divisionId=... o DEFAULT_DIVISION_ID.", "err");
       select.innerHTML = `<option value="">Sin divisionId</option>`;
       select.disabled = true;
       return;
@@ -194,8 +226,8 @@
     select.disabled = true;
 
     try {
-      const url = `${SERVICE_BASE}/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`;
-      const data = await fetchJSON(url);
+      const url = `${base}/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`;
+      const data = await fetchJSON(url, { headers: authHeaders() });
 
       select.innerHTML = `<option value="">Seleccione una lista...</option>`;
       (data || []).forEach((item) => {
@@ -224,7 +256,7 @@
     if (campaignsLoaded) return;
     campaignsLoaded = true;
 
-    requireServiceBase();
+    const base = getServiceBase();
 
     const divisionId = getDivisionId();
     if (!divisionId) {
@@ -238,8 +270,8 @@
     campaignSelect.disabled = true;
 
     try {
-      const url = `${SERVICE_BASE}/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`;
-      const data = await fetchJSON(url);
+      const url = `${base}/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`;
+      const data = await fetchJSON(url, { headers: authHeaders() });
 
       campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
       (data || []).forEach((c) => {
@@ -266,7 +298,7 @@
 
     savedContactListId = args.contactListId || "";
     savedCampaignId = args.campaignId || "";
-    savedDivisionId = args.divisionId || ""; // 👈 IMPORTANTE
+    savedDivisionId = args.divisionId || ""; // IMPORTANTE
 
     chk.checked = !!args.useNewList;
     inp.value = args.newListName || "";
@@ -284,15 +316,15 @@
         execute: {
           inArguments: [
             {
-              divisionId: getDivisionId(),            // 👈 guardamos divisionId
+              divisionId: getDivisionId(),
               contactListId: select.value,
               useNewList: chk.checked,
               newListName: chk.checked ? inp.value : "",
-              campaignId: campaignSelect ? campaignSelect.value : ""
-            }
-          ]
-        }
-      }
+              campaignId: campaignSelect ? campaignSelect.value : "",
+            },
+          ],
+        },
+      },
     };
 
     connection.trigger("updateActivity", payload);
@@ -302,11 +334,6 @@
   // DOM Ready
   // -------------------------
   document.addEventListener("DOMContentLoaded", async () => {
-    // chequeo rápido
-    if (!SERVICE_BASE) {
-      setStatus("SERVICE_BASE vacío. Verifica /api/env.", "err");
-    }
-
     chk.addEventListener("change", toggleNewListInput);
     inp.addEventListener("input", onNewListNameChange);
     select.addEventListener("change", refreshNextButton);
@@ -325,7 +352,8 @@
     try {
       await loadContactLists();
       connection.trigger("ready");
-    } catch {
+    } catch (e) {
+      setStatus(e.message, "err");
       connection.trigger("ready");
     }
   });
