@@ -27,29 +27,6 @@
   let savedCampaignId = "";
   let savedDivisionId = "";
 
-  // =========================
-  // ENV helpers
-  // =========================
-  function env() {
-    return window.__ENV__ || {};
-  }
-
-  function getServiceBase() {
-    const v = (env().SERVICE_BASE || "").trim().replace(/\/+$/, "");
-    if (!v) throw new Error("SERVICE_BASE vacío. Revisa /api/env.js y Vercel env + redeploy.");
-    return v;
-  }
-
-  function getServiceToken() {
-    const v = (env().SERVICE_TOKEN || "").trim();
-    if (!v) throw new Error("SERVICE_TOKEN vacío. Debe ser el Bearer token para tu service.");
-    return v;
-  }
-
-  function getDefaultDivisionId() {
-    return (env().DEFAULT_DIVISION_ID || "").trim();
-  }
-
   function setStatus(text, kind /* "ok" | "err" | "" */) {
     if (!status) return;
     status.textContent = text || "";
@@ -59,51 +36,32 @@
   }
 
   function getDivisionId() {
-    // 1) desde SFMC (lo ideal)
+    // 1) desde lo guardado en SFMC
     if (savedDivisionId) return savedDivisionId;
 
-    // 2) querystring ?divisionId=...
+    // 2) fallback querystring ?divisionId=
     const qs = new URLSearchParams(window.location.search);
     const q = qs.get("divisionId");
     if (q) return q;
 
-    // 3) DEFAULT_DIVISION_ID (fallback)
-    const d = getDefaultDivisionId();
-    if (d) return d;
-
     return "";
   }
 
-  async function fetchJSON(url, options = {}) {
+  async function fetchJSON(url, options) {
     const res = await fetch(url, options);
+    const txt = await res.text().catch(() => "");
+    let body = null;
+    try {
+      body = txt ? JSON.parse(txt) : null;
+    } catch {
+      body = { raw: txt };
+    }
 
     if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      let msg = txt;
-      try {
-        const j = JSON.parse(txt);
-        msg = j?.error || j?.message || j?.details || txt;
-      } catch {}
-      throw new Error(`HTTP ${res.status} - ${msg || "Error"}`);
+      const msg = body?.error || body?.message || body?.details || txt || "Error";
+      throw new Error(`HTTP ${res.status} - ${msg}`);
     }
-
-    // puede venir JSON o vacío
-    const text = await res.text();
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return text;
-    }
-  }
-
-  function authHeaders(extra = {}) {
-    const token = getServiceToken();
-    return {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-      ...extra,
-    };
+    return body;
   }
 
   // -------------------------
@@ -155,23 +113,25 @@
   }
 
   function onNewListNameChange() {
-    if (!chk.checked) {
-      btnCreate.disabled = true;
-    } else {
-      btnCreate.disabled = !(inp.value.trim().length > 0);
-    }
+    if (!chk.checked) btnCreate.disabled = true;
+    else btnCreate.disabled = !(inp.value.trim().length > 0);
+
     refreshNextButton();
   }
 
   // -------------------------
-  // Create contact list (POST al SERVICE)
+  // Create contact list (POST -> proxy /api/genesys/contactlists)
   // -------------------------
   async function onCreateClick() {
     try {
-      const base = getServiceBase();
-
       const name = inp.value.trim();
       if (!name) return;
+
+      const divisionId = getDivisionId();
+      if (!divisionId) {
+        setStatus("Falta divisionId (SFMC o ?divisionId=...)", "err");
+        return;
+      }
 
       setStatus("Creando lista...", "");
       btnCreate.disabled = true;
@@ -182,19 +142,20 @@
         phoneColumns: [{ columnName: "phone_number", type: "cell" }],
       };
 
-      const data = await fetchJSON(`${base}/genesys/contactlists`, {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(payload),
-      });
+      const data = await fetchJSON(
+        `/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      // agregar al combo
       const opt = document.createElement("option");
       opt.value = data.id;
       opt.textContent = data.name;
       select.appendChild(opt);
 
-      // volver a modo existente y seleccionar
       chk.checked = false;
       toggleNewListInput();
       select.value = data.id;
@@ -208,14 +169,12 @@
   }
 
   // -------------------------
-  // Load contact lists (GET al SERVICE)
+  // Load contact lists (GET -> proxy /api/genesys/contactlists)
   // -------------------------
   async function loadContactLists() {
-    const base = getServiceBase();
-
     const divisionId = getDivisionId();
     if (!divisionId) {
-      setStatus("Falta divisionId. Debe venir desde SFMC o por ?divisionId=... o DEFAULT_DIVISION_ID.", "err");
+      setStatus("Falta divisionId (SFMC o ?divisionId=...)", "err");
       select.innerHTML = `<option value="">Sin divisionId</option>`;
       select.disabled = true;
       return;
@@ -226,8 +185,9 @@
     select.disabled = true;
 
     try {
-      const url = `${base}/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`;
-      const data = await fetchJSON(url, { headers: authHeaders() });
+      const data = await fetchJSON(
+        `/api/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`
+      );
 
       select.innerHTML = `<option value="">Seleccione una lista...</option>`;
       (data || []).forEach((item) => {
@@ -249,14 +209,12 @@
   }
 
   // -------------------------
-  // Load campaigns (GET al SERVICE)
+  // Load campaigns (GET -> proxy /api/genesys/campaigns)
   // -------------------------
   let campaignsLoaded = false;
   async function loadCampaignsOnce() {
     if (campaignsLoaded) return;
     campaignsLoaded = true;
-
-    const base = getServiceBase();
 
     const divisionId = getDivisionId();
     if (!divisionId) {
@@ -270,8 +228,9 @@
     campaignSelect.disabled = true;
 
     try {
-      const url = `${base}/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`;
-      const data = await fetchJSON(url, { headers: authHeaders() });
+      const data = await fetchJSON(
+        `/api/genesys/campaigns?divisionId=${encodeURIComponent(divisionId)}`
+      );
 
       campaignSelect.innerHTML = `<option value="">Seleccione una campaña...</option>`;
       (data || []).forEach((c) => {
@@ -298,7 +257,7 @@
 
     savedContactListId = args.contactListId || "";
     savedCampaignId = args.campaignId || "";
-    savedDivisionId = args.divisionId || ""; // IMPORTANTE
+    savedDivisionId = args.divisionId || "";
 
     chk.checked = !!args.useNewList;
     inp.value = args.newListName || "";
@@ -352,8 +311,7 @@
     try {
       await loadContactLists();
       connection.trigger("ready");
-    } catch (e) {
-      setStatus(e.message, "err");
+    } catch {
       connection.trigger("ready");
     }
   });
