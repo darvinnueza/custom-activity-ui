@@ -43,11 +43,10 @@
                 type="text"
                 placeholder="Ingrese el nombre..."
                 />
-
                 <button id="btnCreateList" type="button" disabled>Crear Lista</button>
             </div>
 
-            <!-- ✅ HINT (debajo del input+botón) -->
+            <!-- ✅ HINT -->
             <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
 
             <!-- ✅ Estado -->
@@ -82,7 +81,31 @@
             <!-- Postmonger + bridge -->
             <script src="js/postmonger.js"></script>
             <script src="js/customActivity.js"></script>
-            <script src="js/ui.js"></script>
+
+            <!-- ✅ 1) Cargar ENV desde backend (Vercel server-side) -->
+            <script>
+                // disponible para ui.js
+                window.__ENV__ = window.__ENV__ || {};
+
+                (async function () {
+                    try {
+                    const r = await fetch("/api/env", { cache: "no-store" });
+                    if (r.ok) {
+                        window.__ENV__ = await r.json();
+                    } else {
+                        console.error("No se pudo cargar /api/env:", r.status);
+                    }
+                    } catch (e) {
+                    console.error("Error cargando /api/env:", e);
+                    } finally {
+                    // ✅ 2) cargar ui.js SOLO cuando env ya intentó cargar
+                    const s = document.createElement("script");
+                    s.src = "js/ui.js";
+                    document.body.appendChild(s);
+                    }
+                })();
+            </script>
+
         </div>
         </div>
     </body>
