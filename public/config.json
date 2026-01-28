@@ -18,25 +18,25 @@
                 { "campaignName": "{{Activity.campaignName}}" }
             ],
             "outArguments": [],
-            "url": "https://custom-activity-service.vercel.app/api/execute"
+            "url": "https://custom-activity-ui-tau.vercel.app/api/execute"
         }
     },
     "configurationArguments": {
         "applicationExtensionKey": "c1dad13e-ef98-4d7b-887b-f9b75991f479",
         "save": {
-            "url": "https://custom-activity-service.vercel.app/api/save",
+            "url": "https://custom-activity-ui-tau.vercel.app/api/save",
             "useJwt": false
         },
         "publish": {
-            "url": "https://custom-activity-service.vercel.app/api/publish",
+            "url": "https://custom-activity-ui-tau.vercel.app/api/publish",
             "useJwt": false
         },
         "validate": {
-            "url": "https://custom-activity-service.vercel.app/api/validate",
+            "url": "https://custom-activity-ui-tau.vercel.app/api/validate",
             "useJwt": false
         },
         "stop": {
-            "url": "https://custom-activity-service.vercel.app/api/stop",
+            "url": "https://custom-activity-ui-tau.vercel.app/api/stop",
             "useJwt": false
         }
     },
