@@ -10,88 +10,76 @@
   </head>
 
   <body>
+    <div class="app-header">Custom Activity UI — VoiceBot</div>
 
-    <!-- ❌ UI BLOQUEADA POR DEFECTO -->
-    <div id="app" style="display:none;">
+    <div class="container">
+      <div class="card">
 
-      <div class="app-header">Custom Activity UI — VoiceBot</div>
+        <!-- ===================== -->
+        <!-- STEP 1: CONTACT LISTS -->
+        <!-- ===================== -->
+        <section id="stepContact">
+          <h2>Configuración de Lista de Contactos</h2>
+          <p class="subtitle">
+            Elige una lista de contactos existente o define una nueva para esta actividad de VoiceBot.
+          </p>
 
-      <div class="container">
-        <div class="card">
+          <label for="contactListSelect">Lista de Contactos Existente</label>
+          <select id="contactListSelect">
+            <option>Cargando...</option>
+          </select>
 
-          <!-- ===================== -->
-          <!-- STEP 1: CONTACT LISTS -->
-          <!-- ===================== -->
-          <section id="stepContact">
-            <h2>Configuración de Lista de Contactos</h2>
-            <p class="subtitle">
-              Elige una lista de contactos existente o define una nueva para esta actividad de VoiceBot.
-            </p>
+          <div class="checkbox">
+            <input type="checkbox" id="newListCheck" />
+            <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
+          </div>
 
-            <label for="contactListSelect">Lista de Contactos Existente</label>
-            <select id="contactListSelect">
-              <option>Cargando...</option>
-            </select>
+          <label for="newListName">Nombre de la Nueva Lista</label>
 
-            <div class="checkbox">
-              <input type="checkbox" id="newListCheck" />
-              <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
-            </div>
+          <div class="inline-create">
+            <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
+            <button id="btnCreateList" type="button" disabled>Crear Lista</button>
+          </div>
 
-            <label for="newListName">Nombre de la Nueva Lista</label>
+          <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
 
-            <div class="inline-create">
-              <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
-              <button id="btnCreateList" type="button" disabled>Crear Lista</button>
-            </div>
+          <small id="createStatus" class="status"></small>
 
-            <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
+          <div class="nav">
+            <button id="btnNext" type="button" disabled>Siguiente</button>
+          </div>
+        </section>
 
-            <small id="createStatus" class="status"></small>
+        <!-- ===================== -->
+        <!-- STEP 2: CAMPAIGN      -->
+        <!-- ===================== -->
+        <section id="stepCampaign" style="display:none;">
+          <h2>Configuración de Campaña</h2>
+          <p class="subtitle">
+            Elige una campaña existente o define una nueva para esta actividad de VoiceBot.
+          </p>
 
-            <div class="nav">
-              <button id="btnNext" type="button" disabled>Siguiente</button>
-            </div>
-          </section>
+          <label for="campaignSelect">Campaña Existente</label>
+          <select id="campaignSelect">
+            <option value="">Cargando...</option>
+          </select>
 
-          <!-- ===================== -->
-          <!-- STEP 2: CAMPAIGN      -->
-          <!-- ===================== -->
-          <section id="stepCampaign" style="display:none;">
-            <h2>Configuración de Campaña</h2>
-            <p class="subtitle">
-              Elige una campaña existente o define una nueva para esta actividad de VoiceBot.
-            </p>
+          <div class="nav">
+            <button id="btnBack" type="button">Atrás</button>
+          </div>
+        </section>
 
-            <label for="campaignSelect">Campaña Existente</label>
-            <select id="campaignSelect">
-              <option value="">Cargando...</option>
-            </select>
+        <!-- Postmonger + bridge -->
+        <script src="js/postmonger.js"></script>
+        <script src="js/customActivity.js"></script>
 
-            <div class="nav">
-              <button id="btnBack" type="button">Atrás</button>
-            </div>
-          </section>
+        <!-- ✅ ENV: esto define window.__ENV__ -->
+        <script src="/api/env"></script>
 
-        </div>
+        <!-- ✅ UI -->
+        <script src="js/ui.js"></script>
+
       </div>
     </div>
-
-    <!-- ❌ ERROR DE ACCESO -->
-    <div id="error" style="display:none; padding:40px; text-align:center;">
-      <h2>Acceso no autorizado</h2>
-      <p>Esta interfaz solo puede utilizarse desde Salesforce Marketing Cloud.</p>
-    </div>
-
-    <!-- Postmonger + bridge -->
-    <script src="js/postmonger.js"></script>
-    <script src="js/customActivity.js"></script>
-
-    <!-- ENV -->
-    <script src="/api/env"></script>
-
-    <!-- UI -->
-    <script src="js/ui.js"></script>
-
   </body>
 </html>
