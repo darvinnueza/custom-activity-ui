@@ -6,14 +6,15 @@
   const error = document.getElementById("error");
 
   let payload = {};
+  let tokenReceived = false;
 
-  // Handshake
-  connection.trigger("ready");
-  connection.trigger("requestTokens");
-  connection.trigger("requestEndpoints");
-
+  // ===============================
   // 🔐 CONTROL DE ACCESO UI
+  // ===============================
+
   connection.on("requestedTokens", function (tokens) {
+    tokenReceived = true;
+
     const jwt = tokens && tokens.token;
 
     if (jwt) {
@@ -23,7 +24,23 @@
     }
   });
 
-  // Init activity
+  // ⏱️ Fallback: si NO estamos en SFMC
+  setTimeout(function () {
+    if (!tokenReceived) {
+      error.style.display = "block";
+    }
+  }, 500);
+
+  // ===============================
+  // 🔄 HANDSHAKE (DESPUÉS DE LISTENERS)
+  // ===============================
+  connection.trigger("ready");
+  connection.trigger("requestTokens");
+  connection.trigger("requestEndpoints");
+
+  // ===============================
+  // INIT ACTIVITY
+  // ===============================
   connection.on("initActivity", function (data) {
     payload = data || {};
 
@@ -49,6 +66,9 @@
     });
   });
 
+  // ===============================
+  // SAVE
+  // ===============================
   connection.on("clickedNext", function () {
     save("next");
   });
