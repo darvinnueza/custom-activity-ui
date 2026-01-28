@@ -2,14 +2,28 @@
 (function () {
   const connection = new Postmonger.Session();
 
+  const app = document.getElementById("app");
+  const error = document.getElementById("error");
+
   let payload = {};
 
-  // ✅ Handshake correcto (si esto no está, se queda el spinner)
+  // Handshake
   connection.trigger("ready");
   connection.trigger("requestTokens");
   connection.trigger("requestEndpoints");
 
-  // ✅ Journey manda el payload aquí cuando abre la activity
+  // 🔐 CONTROL DE ACCESO UI
+  connection.on("requestedTokens", function (tokens) {
+    const jwt = tokens && tokens.token;
+
+    if (jwt) {
+      app.style.display = "block";
+    } else {
+      error.style.display = "block";
+    }
+  });
+
+  // Init activity
   connection.on("initActivity", function (data) {
     payload = data || {};
 
@@ -19,7 +33,6 @@
     payload.arguments.execute.inArguments =
       payload.arguments.execute.inArguments || [];
 
-    // recuperar valores guardados (si existen)
     const inArgs = payload.arguments.execute.inArguments;
 
     const contactListId =
@@ -29,7 +42,6 @@
     const newListName =
       inArgs.find((a) => a.newListName)?.newListName || "";
 
-    // mandar al UI para que seleccione / pinte
     connection.trigger("showUIData", {
       contactListId,
       useNewList,
@@ -37,7 +49,6 @@
     });
   });
 
-  // ✅ Guardar al dar Next / Done
   connection.on("clickedNext", function () {
     save("next");
   });
@@ -50,15 +61,14 @@
     const select = document.getElementById("contactListSelect");
     const chk = document.getElementById("newListCheck");
     const inp = document.getElementById("newListName");
+    const campaignSelect = document.getElementById("campaignSelect");
 
     payload.metaData = payload.metaData || {};
     payload.arguments = payload.arguments || {};
     payload.arguments.execute = payload.arguments.execute || {};
 
-    // ✅ UN SOLO OBJETO con TODO
     payload.arguments.execute.inArguments = [
       {
-        // ✅ bindings (no se pierden)
         request_id: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.request_id}}",
         contact_key: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.contact_key}}",
         phone_number: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.phone_number}}",
@@ -66,12 +76,9 @@
         created_at: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.created_at}}",
         updated_at: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.updated_at}}",
 
-        // ✅ config de tu UI
         contactListId: select ? select.value : "",
         useNewList: chk ? chk.checked : false,
         newListName: chk && chk.checked ? (inp ? inp.value : "") : "",
-
-        // ✅ campaña (si ya la tienes)
         campaignId: campaignSelect ? campaignSelect.value : ""
       }
     ];
@@ -79,8 +86,6 @@
     payload.metaData.isConfigured = true;
 
     connection.trigger("updateActivity", payload);
-
-    // ✅ IMPORTANTE: liberar Journey Builder (si no, spinner / no cierra bien)
     connection.trigger(action);
   }
 })();
