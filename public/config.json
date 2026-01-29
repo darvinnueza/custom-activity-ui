@@ -14,10 +14,8 @@
     "arguments": {
         "execute": {
             "inArguments": [
-                {
-                    "campaignId": "{{Activity.campaignId}}",
-                    "campaignName": "{{Activity.campaignName}}"
-                }
+                { "request_id": "{{Event.request_id}}" },
+                { "contact_key": "{{Event.contact_key}}" }
             ],
             "outArguments": [],
             "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
