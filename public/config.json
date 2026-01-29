@@ -7,15 +7,17 @@
     "type": "REST",
     "lang": {
         "en-US": {
-            "name": "Genesys Campaign Selector",
-            "description": "Select Genesys Campaign for outbound execution"
+        "name": "Genesys Campaign Selector",
+        "description": "Select Genesys Campaign for outbound execution"
         }
     },
     "arguments": {
         "execute": {
             "inArguments": [
-                { "campaignId": "{{Activity.campaignId}}" },
-                { "campaignName": "{{Activity.campaignName}}" }
+                {
+                    "campaignId": "{{Activity.campaignId}}",
+                    "campaignName": "{{Activity.campaignName}}"
+                }
             ],
             "outArguments": [],
             "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
