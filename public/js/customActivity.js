@@ -1,32 +1,41 @@
 /* global Postmonger */
 const connection = new Postmonger.Session();
 
-// Journey pide inicializar la activity
+let payload = {};
+
+// 1️⃣ Journey inicializa la activity
 connection.on('initActivity', function (activity) {
     console.log('initActivity', activity);
 
-    // IMPORTANTE: decir que la UI está lista
+    payload = activity || {};
+
+    // 🔥 DECIR QUÉ BOTONES USAS
+    connection.trigger('updateButton', {
+        button: 'next',
+        enabled: true
+    });
+
+    // 🔥 MUY IMPORTANTE: decir que la UI está lista
     connection.trigger('ready');
 });
 
-// Cuando el usuario da click en "Guardar"
-connection.on('clickedSave', function () {
-    console.log('clickedSave');
-
-    // Guardar algo mínimo (aunque sea vacío)
-    const payload = {
-        arguments: {},
-        metaData: {}
-    };
-
-    connection.trigger('updateActivity', payload);
-});
-
-// Cuando Journey quiere cerrar
+// 2️⃣ Journey pide tokens
 connection.on('requestedTokens', function () {
     connection.trigger('ready');
 });
 
+// 3️⃣ Journey pide endpoints
 connection.on('requestedEndpoints', function () {
     connection.trigger('ready');
+});
+
+// 4️⃣ Click en "Listo / Guardar"
+connection.on('clickedNext', function () {
+    console.log('clickedNext');
+
+    // Guardar algo (aunque sea vacío)
+    payload.arguments = payload.arguments || {};
+    payload.metaData = payload.metaData || {};
+
+    connection.trigger('updateActivity', payload);
 });
