@@ -25,7 +25,7 @@
         "configModal": {
             "height": 600,
             "width": 800,
-            "url": "https://custom-activity-ui.vercel.app/"
+            "url": "https://custom-activity-ui-tau.vercel.app/"
         }
     }
 }
