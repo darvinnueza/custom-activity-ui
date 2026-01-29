@@ -18,7 +18,7 @@
                 { "campaignName": "{{Activity.campaignName}}" }
             ],
             "outArguments": [],
-            "url": "https://custom-activity-service.vercel.app/api/execute"
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
         }
     },
     "configurationArguments": {
