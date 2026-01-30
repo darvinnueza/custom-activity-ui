@@ -1,70 +1,41 @@
-// ===============================
-// ENV
-// ===============================
-const {
-  API_BASE_URL,
-  DIVISION_ID,
-  INTERNAL_API_TOKEN
-} = window.__ENV__ || {};
+const { DIVISION_ID } = window.__ENV__ || {}; // si quieres, o ponlo fijo/desde SFMC
 
-if (!API_BASE_URL || !DIVISION_ID || !INTERNAL_API_TOKEN) {
-  console.error("ENV missing", { API_BASE_URL, DIVISION_ID, INTERNAL_API_TOKEN });
-  throw new Error("Missing required environment variables");
+if (!DIVISION_ID) {
+  console.error("ENV missing: DIVISION_ID");
+  throw new Error("Missing DIVISION_ID");
 }
 
-// ===============================
-// ENDPOINTS (DERIVADOS)
-// ===============================
-const ENDPOINTS = {
-  CONTACT_LISTS: `${API_BASE_URL}/genesys/contactlists`,
-  CAMPAIGNS: `${API_BASE_URL}/genesys/campaigns`
-};
-
-// ===============================
-// LOAD CONTACT LISTS
-// ===============================
 async function loadContactLists() {
   const select = document.getElementById("contactListSelect");
-
   select.innerHTML = `<option>Cargando...</option>`;
   select.disabled = true;
 
   try {
-    const url = `${ENDPOINTS.CONTACT_LISTS}?divisionId=${encodeURIComponent(DIVISION_ID)}`;
-
-    const res = await fetch(url, {
-      headers: {
-        "Accept": "application/json",
-        "x-internal-token": INTERNAL_API_TOKEN   // 🔐 CLAVE
-      }
-    });
+    const url = `/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`;
+    const res = await fetch(url, { headers: { accept: "application/json" } });
 
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      const raw = await res.text();
+      throw new Error(`HTTP ${res.status}: ${raw.slice(0, 200)}`);
     }
 
     const data = await res.json();
     const items = data.items || [];
 
     select.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
-
-    items.forEach(item => {
-      if (!item.id || !item.name) return;
-
+    items.forEach(i => {
+      if (!i.id || !i.name) return;
       const opt = document.createElement("option");
-      opt.value = item.id;
-      opt.textContent = item.name;
+      opt.value = i.id;
+      opt.textContent = i.name;
       select.appendChild(opt);
     });
 
     select.disabled = false;
-  } catch (err) {
-    console.error("Error loading contact lists", err);
+  } catch (e) {
+    console.error("Error loading contact lists", e);
     select.innerHTML = `<option>Error cargando listas</option>`;
   }
 }
 
-// ===============================
-// INIT
-// ===============================
 document.addEventListener("DOMContentLoaded", loadContactLists);
