@@ -19,26 +19,48 @@ let btnNext;
 // ==============================
 function setStatus(msg, type) {
   if (!createStatus) return;
+
   createStatus.textContent = msg || "";
+
+  // Mantener la clase base "status"
   createStatus.classList.remove("ok", "err");
   if (type === "ok") createStatus.classList.add("ok");
   if (type === "err") createStatus.classList.add("err");
 }
 
+function setNextEnabled(enabled) {
+  if (!btnNext) return;
+  btnNext.disabled = !enabled;
+}
+
 function setNewListMode(enabled) {
-  if (!chkNewList || !inputNewList || !btnCreateList) return;
+  if (!chkNewList || !inputNewList || !btnCreateList || !selectContactLists) return;
 
   chkNewList.checked = enabled;
 
   if (enabled) {
+    // Bloquea el select porque se ignora
+    selectContactLists.disabled = true;
+
     inputNewList.disabled = false;
     inputNewList.focus();
+
     btnCreateList.disabled = inputNewList.value.trim().length === 0;
+
+    // En modo nueva lista, "Siguiente" debe estar deshabilitado
+    setNextEnabled(false);
   } else {
     inputNewList.value = "";
     inputNewList.disabled = true;
+
     btnCreateList.disabled = true;
+
+    // Reactiva el select
+    selectContactLists.disabled = false;
+
     setStatus("", "");
+    // Siguiente depende de que exista selección
+    setNextEnabled(!!selectContactLists.value);
   }
 }
 
@@ -61,7 +83,9 @@ function wireNewListToggle() {
 // ==============================
 // API CALLS
 // ==============================
-async function loadContactLists() {
+async function loadContactLists(selectIdToSet = "") {
+  if (!selectContactLists) return;
+
   selectContactLists.innerHTML = "<option>Cargando...</option>";
   selectContactLists.disabled = true;
 
@@ -70,7 +94,6 @@ async function loadContactLists() {
       `/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`,
       {
         headers: {
-          // si tu backend requiere auth también para GET, déjalo
           Authorization: `Bearer ${INTERNAL_TOKEN}`,
           Accept: "application/json",
         },
@@ -102,21 +125,38 @@ async function loadContactLists() {
       selectContactLists.appendChild(opt);
     });
 
-    selectContactLists.disabled = false;
+    // Si quieres setear un ID en particular (ej: luego de crear)
+    if (selectIdToSet) {
+      selectContactLists.value = selectIdToSet;
+    }
+
+    // Si no estás en modo nueva lista, habilita select
+    if (!chkNewList?.checked) {
+      selectContactLists.disabled = false;
+    }
+
+    // Botón siguiente: solo si hay selección y no estás en modo nueva lista
+    if (!chkNewList?.checked) {
+      setNextEnabled(!!selectContactLists.value);
+    } else {
+      setNextEnabled(false);
+    }
   } catch (err) {
     console.error("CONTACT LIST ERROR:", err);
     selectContactLists.innerHTML = "<option>Error cargando listas</option>";
     selectContactLists.disabled = true;
+    setNextEnabled(false);
   }
 }
 
 async function createContactList() {
   try {
     setStatus("", "");
-    const name = inputNewList.value.trim();
+
+    const name = (inputNewList?.value || "").trim();
     if (!name) return;
 
-    // ✅ CONTRATO (Swagger + lo que tu servicio valida)
+    // ✅ CONTRATO (Swagger + servicio)
     const payload = {
       name,
       columnNames: ["request_id", "contact_key", "msisdn", "status", "activityId"],
@@ -147,33 +187,33 @@ async function createContactList() {
 
     if (!res.ok) {
       console.error("CREATE LIST ERROR:", data || text);
-      // muestra algo útil
       const msg =
         data?.error ||
         data?.message ||
+        data?.details ||
         (typeof text === "string" && text.length < 200 ? text : "Error creando la lista.");
       setStatus(msg, "err");
-      btnCreateList.disabled = false; // permitir reintento
+
+      // permitir reintento si sigue en modo nueva lista
+      btnCreateList.disabled = inputNewList.value.trim().length === 0;
       return;
     }
 
     setStatus("Lista creada correctamente ✅", "ok");
 
     // Refresca listas y selecciona la nueva
-    await loadContactLists();
-    if (data?.id) {
-      selectContactLists.value = data.id;
-    }
+    const newId = data?.id || "";
+    await loadContactLists(newId);
 
-    // Opcional: apaga modo nueva lista
+    // salir de modo nueva lista
     setNewListMode(false);
 
-    // habilita "Siguiente" si aplica tu flujo
-    if (btnNext) btnNext.disabled = false;
+    // ahora sí puede avanzar
+    setNextEnabled(true);
   } catch (err) {
     console.error("CREATE LIST EXCEPTION:", err);
     setStatus("Error creando la lista. Revise consola / network.", "err");
-    btnCreateList.disabled = false;
+    btnCreateList.disabled = inputNewList.value.trim().length === 0;
   }
 }
 
@@ -182,7 +222,7 @@ async function createContactList() {
 // ==============================
 async function initEnv() {
   try {
-    // bind elements (IMPORTANTE: esperar DOM)
+    // bind elements
     selectContactLists = document.getElementById("contactListSelect");
     chkNewList = document.getElementById("newListCheck");
     inputNewList = document.getElementById("newListName");
@@ -190,8 +230,15 @@ async function initEnv() {
     createStatus = document.getElementById("createStatus");
     btnNext = document.getElementById("btnNext");
 
-    // activa lógica UI
     wireNewListToggle();
+
+    // cambio de lista existente -> habilita siguiente
+    if (selectContactLists) {
+      selectContactLists.addEventListener("change", () => {
+        if (chkNewList?.checked) return; // si estás creando nueva, ignora
+        setNextEnabled(!!selectContactLists.value);
+      });
+    }
 
     // click crear lista
     if (btnCreateList) {
@@ -217,10 +264,11 @@ async function initEnv() {
     await loadContactLists();
   } catch (err) {
     console.error("ENV ERROR:", err);
-    const select = document.getElementById("contactListSelect");
-    if (select) {
-      select.innerHTML = "<option>Error cargando configuración</option>";
+    if (selectContactLists) {
+      selectContactLists.innerHTML = "<option>Error cargando configuración</option>";
+      selectContactLists.disabled = true;
     }
+    setNextEnabled(false);
   }
 }
 
