@@ -64,10 +64,10 @@ body {
 }
 
 .subtitle {
-  margin: 0 0 18px 0;
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.4;
+    margin: 0 0 18px 0;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 /* =========================
@@ -235,5 +235,5 @@ input[type="text"]:focus {
 ========================================================= */
 iframe {
   height: 100vh !important;
-  min-height: 720px !important;
+  min-height: 820px !important;
 }
