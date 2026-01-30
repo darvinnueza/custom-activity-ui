@@ -16,7 +16,7 @@ async function initEnv() {
 
     API_BASE_URL = env.API_BASE_URL;
     DIVISION_ID = env.DIVISION_ID;
-    INTERNAL_TOKEN = env.INTERNAL_TOKEN;
+    INTERNAL_TOKEN = env.INTERNAL_TOKEN; // ⚠️ NO se usa aquí, está bien así
 
     if (!API_BASE_URL || !DIVISION_ID) {
       throw new Error("Missing ENV variables");
