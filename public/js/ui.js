@@ -2,59 +2,50 @@
 
 let API_BASE_URL;
 let DIVISION_ID;
+let INTERNAL_TOKEN;
 
 // ==============================
 // UI ELEMENTS
 // ==============================
-const chkNewList = document.getElementById("newListCheck");
-const inputNewList = document.getElementById("newListName");
-const btnCreateList = document.getElementById("btnCreateList");
-const selectContactList = document.getElementById("contactListSelect");
-const statusEl = document.getElementById("createStatus");
+let selectContactLists;
+let chkNewList;
+let inputNewList;
+let btnCreateList;
+let createStatus;
+let btnNext;
 
 // ==============================
-// HELPERS
+// HELPERS UI
 // ==============================
-function setStatus(msg, type /* ok|err|'' */) {
-  if (!statusEl) return;
-  statusEl.textContent = msg || "";
-  statusEl.classList.remove("ok", "err");
-  if (type === "ok") statusEl.classList.add("ok");
-  if (type === "err") statusEl.classList.add("err");
+function setStatus(msg, type) {
+  if (!createStatus) return;
+  createStatus.textContent = msg || "";
+  createStatus.classList.remove("ok", "err");
+  if (type === "ok") createStatus.classList.add("ok");
+  if (type === "err") createStatus.classList.add("err");
 }
 
 function setNewListMode(enabled) {
-  if (!chkNewList || !inputNewList || !btnCreateList || !selectContactList) return;
+  if (!chkNewList || !inputNewList || !btnCreateList) return;
 
   chkNewList.checked = enabled;
 
   if (enabled) {
-    // modo crear
-    selectContactList.disabled = true;
-
     inputNewList.disabled = false;
     inputNewList.focus();
-
-    const name = inputNewList.value.trim();
-    btnCreateList.disabled = name.length === 0;
-
-    setStatus("", "");
+    btnCreateList.disabled = inputNewList.value.trim().length === 0;
   } else {
-    // modo seleccionar
     inputNewList.value = "";
     inputNewList.disabled = true;
     btnCreateList.disabled = true;
-
-    selectContactList.disabled = false;
-
     setStatus("", "");
   }
 }
 
 function wireNewListToggle() {
-  if (!chkNewList || !inputNewList || !btnCreateList || !selectContactList) return;
+  if (!chkNewList || !inputNewList || !btnCreateList) return;
 
-  // estado inicial (CRÍTICO)
+  // default (bloqueado)
   setNewListMode(false);
 
   chkNewList.addEventListener("change", () => {
@@ -65,73 +56,150 @@ function wireNewListToggle() {
     if (!chkNewList.checked) return;
     btnCreateList.disabled = inputNewList.value.trim().length === 0;
   });
-
-  btnCreateList.addEventListener("click", createContactList);
 }
 
 // ==============================
-// CREATE CONTACT LIST (POST)
+// API CALLS
 // ==============================
+async function loadContactLists() {
+  selectContactLists.innerHTML = "<option>Cargando...</option>";
+  selectContactLists.disabled = true;
+
+  try {
+    const res = await fetch(
+      `/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`,
+      {
+        headers: {
+          // si tu backend requiere auth también para GET, déjalo
+          Authorization: `Bearer ${INTERNAL_TOKEN}`,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
+    }
+
+    // ✅ Swagger: ContactListResponse.entities
+    const items = Array.isArray(data.entities) ? data.entities : [];
+
+    selectContactLists.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
+
+    items.forEach((item) => {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.name;
+      selectContactLists.appendChild(opt);
+    });
+
+    selectContactLists.disabled = false;
+  } catch (err) {
+    console.error("CONTACT LIST ERROR:", err);
+    selectContactLists.innerHTML = "<option>Error cargando listas</option>";
+    selectContactLists.disabled = true;
+  }
+}
+
 async function createContactList() {
   try {
-    const name = (inputNewList.value || "").trim();
-    if (!name) {
-      setStatus("Ingrese un nombre para la lista.", "err");
-      return;
-    }
+    setStatus("", "");
+    const name = inputNewList.value.trim();
+    if (!name) return;
+
+    // ✅ CONTRATO (Swagger + lo que tu servicio valida)
+    const payload = {
+      name,
+      columnNames: ["request_id", "contact_key", "msisdn", "status", "activityId"],
+      phoneColumns: [{ columnName: "msisdn", type: "cell" }],
+      division: { id: DIVISION_ID },
+    };
 
     btnCreateList.disabled = true;
     setStatus("Creando lista...", "");
 
-    // Body SEGÚN SWAGGER
-    const payload = {
-      name,
-      columnNames: ["request_id", "contact_key", "msisdn", "status"],
-      phoneColumns: [{ columnName: "msisdn", type: "cell" }]
-    };
-
-    const res = await fetch("/api/genesys/contactlists", {
+    const res = await fetch(`/api/genesys/contactlists`, {
       method: "POST",
       headers: {
+        Authorization: `Bearer ${INTERNAL_TOKEN}`,
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json",
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     const text = await res.text();
-    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
-
-    let created = {};
-    try { created = text ? JSON.parse(text) : {}; } catch { created = {}; }
-
-    setStatus("Lista creada correctamente.", "ok");
-
-    // Recargar listas y seleccionar la nueva
-    await loadContactLists();
-
-    // Si tu API devuelve {id,name} (como swagger), selecciona
-    if (created && created.id) {
-      selectContactList.value = created.id;
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
     }
 
-    // salir del modo crear
+    if (!res.ok) {
+      console.error("CREATE LIST ERROR:", data || text);
+      // muestra algo útil
+      const msg =
+        data?.error ||
+        data?.message ||
+        (typeof text === "string" && text.length < 200 ? text : "Error creando la lista.");
+      setStatus(msg, "err");
+      btnCreateList.disabled = false; // permitir reintento
+      return;
+    }
+
+    setStatus("Lista creada correctamente ✅", "ok");
+
+    // Refresca listas y selecciona la nueva
+    await loadContactLists();
+    if (data?.id) {
+      selectContactLists.value = data.id;
+    }
+
+    // Opcional: apaga modo nueva lista
     setNewListMode(false);
 
+    // habilita "Siguiente" si aplica tu flujo
+    if (btnNext) btnNext.disabled = false;
   } catch (err) {
-    console.error("CREATE LIST ERROR:", err);
+    console.error("CREATE LIST EXCEPTION:", err);
     setStatus("Error creando la lista. Revise consola / network.", "err");
     btnCreateList.disabled = false;
   }
 }
 
 // ==============================
-// INIT ENV (TU CÓDIGO)
+// INIT ENV
 // ==============================
 async function initEnv() {
   try {
-    // activar lógica UI
+    // bind elements (IMPORTANTE: esperar DOM)
+    selectContactLists = document.getElementById("contactListSelect");
+    chkNewList = document.getElementById("newListCheck");
+    inputNewList = document.getElementById("newListName");
+    btnCreateList = document.getElementById("btnCreateList");
+    createStatus = document.getElementById("createStatus");
+    btnNext = document.getElementById("btnNext");
+
+    // activa lógica UI
     wireNewListToggle();
+
+    // click crear lista
+    if (btnCreateList) {
+      btnCreateList.addEventListener("click", () => {
+        if (!chkNewList.checked) return;
+        createContactList();
+      });
+    }
 
     const res = await fetch("/api/env");
     if (!res.ok) throw new Error("No se pudo cargar /api/env");
@@ -140,61 +208,19 @@ async function initEnv() {
 
     API_BASE_URL = env.API_BASE_URL;
     DIVISION_ID = env.DIVISION_ID;
+    INTERNAL_TOKEN = env.INTERNAL_TOKEN;
 
-    if (!API_BASE_URL || !DIVISION_ID) {
-      throw new Error("Missing ENV variables");
+    if (!API_BASE_URL || !DIVISION_ID || !INTERNAL_TOKEN) {
+      throw new Error("Missing ENV variables (API_BASE_URL / DIVISION_ID / INTERNAL_TOKEN)");
     }
 
     await loadContactLists();
   } catch (err) {
     console.error("ENV ERROR:", err);
-    if (selectContactList) {
-      selectContactList.innerHTML = "<option>Error cargando configuración</option>";
-      selectContactList.disabled = true;
+    const select = document.getElementById("contactListSelect");
+    if (select) {
+      select.innerHTML = "<option>Error cargando configuración</option>";
     }
-  }
-}
-
-// ==============================
-// LOAD CONTACT LISTS (TU CÓDIGO)
-// ==============================
-async function loadContactLists() {
-  if (!selectContactList) return;
-
-  selectContactList.innerHTML = "<option>Cargando...</option>";
-  selectContactList.disabled = true;
-
-  try {
-    const res = await fetch(
-      `/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`
-    );
-
-    const text = await res.text();
-    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
-
-    let data = {};
-    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
-
-    // Swagger: ContactListResponse.entities
-    const items = Array.isArray(data.entities) ? data.entities : [];
-
-    selectContactList.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
-
-    items.forEach((item) => {
-      const opt = document.createElement("option");
-      opt.value = item.id;
-      opt.textContent = item.name;
-      selectContactList.appendChild(opt);
-    });
-
-    // Solo habilitar si NO estás en modo crear
-    if (!chkNewList.checked) {
-      selectContactList.disabled = false;
-    }
-  } catch (err) {
-    console.error("CONTACT LIST ERROR:", err);
-    selectContactList.innerHTML = "<option>Error cargando listas</option>";
-    selectContactList.disabled = true;
   }
 }
 
