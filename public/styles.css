@@ -10,7 +10,7 @@ html, body {
 }
 
 body {
-    margin: 10px;
+    margin: 0;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     background: #f3f4f6;
     color: #111827;
