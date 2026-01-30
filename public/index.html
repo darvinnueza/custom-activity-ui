@@ -11,62 +11,58 @@
 
     <body>
         <div class="app-header">Custom Activity UI — VoiceBot</div>
-
-        <div class="container">
-        <div class="card">
-
             <!-- ===================== -->
             <!-- STEP 1: CONTACT LISTS -->
             <!-- ===================== -->
             <section id="stepContact">
-            <h2>Configuración de Lista de Contactos</h2>
-            <p class="subtitle">
-                Elige una lista de contactos existente o define una nueva para esta actividad de VoiceBot.
-            </p>
+                <h2>Configuración de Lista de Contactos</h2>
+                <p class="subtitle">
+                    Elige una lista de contactos existente o define una nueva para esta actividad de VoiceBot.
+                </p>
 
-            <label for="contactListSelect">Lista de Contactos Existente</label>
-            <select id="contactListSelect">
-                <option>Cargando...</option>
-            </select>
+                <label for="contactListSelect">Lista de Contactos Existente</label>
+                <select id="contactListSelect">
+                    <option>Cargando...</option>
+                </select>
 
-            <div class="checkbox">
-                <input type="checkbox" id="newListCheck" />
-                <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
-            </div>
+                <div class="checkbox">
+                    <input type="checkbox" id="newListCheck" />
+                    <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
+                </div>
 
-            <label for="newListName">Nombre de la Nueva Lista</label>
+                <label for="newListName">Nombre de la Nueva Lista</label>
 
-            <div class="inline-create">
-                <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
-                <button id="btnCreateList" type="button" disabled>Crear Lista</button>
-            </div>
+                <div class="inline-create">
+                    <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
+                    <button id="btnCreateList" type="button" disabled>Crear Lista</button>
+                </div>
 
-            <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
+                <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
 
-            <small id="createStatus" class="status"></small>
+                <small id="createStatus" class="status"></small>
 
-            <div class="nav">
-                <button id="btnNext" type="button" disabled>Siguiente</button>
-            </div>
+                <div class="nav">
+                    <button id="btnNext" type="button" disabled>Siguiente</button>
+                </div>
             </section>
 
             <!-- ===================== -->
             <!-- STEP 2: CAMPAIGN      -->
             <!-- ===================== -->
             <section id="stepCampaign" style="display:none;">
-            <h2>Configuración de Campaña</h2>
-            <p class="subtitle">
-                Elige una campaña existente o define una nueva para esta actividad de VoiceBot.
-            </p>
+                <h2>Configuración de Campaña</h2>
+                <p class="subtitle">
+                    Elige una campaña existente o define una nueva para esta actividad de VoiceBot.
+                </p>
 
-            <label for="campaignSelect">Campaña Existente</label>
-            <select id="campaignSelect">
-                <option value="">Cargando...</option>
-            </select>
+                <label for="campaignSelect">Campaña Existente</label>
+                <select id="campaignSelect">
+                    <option value="">Cargando...</option>
+                </select>
 
-            <div class="nav">
-                <button id="btnBack" type="button">Atrás</button>
-            </div>
+                <div class="nav">
+                    <button id="btnBack" type="button">Atrás</button>
+                </div>
             </section>
 
             <!-- Postmonger + bridge -->
@@ -78,8 +74,8 @@
 
             <!-- ✅ UI -->
             <script src="js/ui.js"></script>
-
-        </div>
+        </div>        <div class="container">
+        <div class="card">
         </div>
     </body>
 </html>
