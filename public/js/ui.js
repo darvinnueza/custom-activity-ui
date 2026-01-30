@@ -51,7 +51,8 @@ async function loadContactLists() {
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
 
-    const items = data.entities || data.items || [];
+    // 🔥 Swagger: ContactListResponse.entities
+    const items = Array.isArray(data.entities) ? data.entities : [];
 
     select.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
 
