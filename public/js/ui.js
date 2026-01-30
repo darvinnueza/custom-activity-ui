@@ -42,13 +42,16 @@ async function loadContactLists() {
       `/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`
     );
 
+    const text = await res.text();
+
     if (!res.ok) {
-      const t = await res.text();
-      throw new Error(t);
+      throw new Error(text || `HTTP ${res.status}`);
     }
 
-    const data = await res.json();
-    const items = data.items || [];
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+
+    const items = data.entities || data.items || [];
 
     select.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
 
@@ -63,6 +66,7 @@ async function loadContactLists() {
   } catch (err) {
     console.error("CONTACT LIST ERROR:", err);
     select.innerHTML = "<option>Error cargando listas</option>";
+    select.disabled = true;
   }
 }
 
