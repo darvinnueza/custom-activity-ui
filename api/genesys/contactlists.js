@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `Bearer "super-token-largo-invendible-123"`,
+        Authorization: `Bearer 'super-token-largo-invendible-123'`,
         Accept: "application/json",
       },
     });
