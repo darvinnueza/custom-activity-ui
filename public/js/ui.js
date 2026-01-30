@@ -163,7 +163,7 @@ async function createContactList() {
     setStatus("Creando lista...", "");
 
     // ✅ OJO: POST VA AL NUEVO ENDPOINT SEPARADO
-    const res = await fetch(`/api/genesys/contactlists-create`, {
+    const res = await fetch(`/api/genesys/contactlists/create`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${INTERNAL_TOKEN}`,
