@@ -1,5 +1,11 @@
-window.__ENV__ = {
-    API_BASE_URL: "https://custom-activity-service.vercel.app/api",
-    DIVISION_ID: "c36e51ad-bec1-4117-9fd3-9c1d22147888",
-    INTERNAL_TOKEN: "super-token-largo-invendible-123"
-};
+export default function handler(req, res) {
+    res.setHeader("Content-Type", "application/javascript");
+
+    res.status(200).send(`
+        window.__ENV__ = {
+        API_BASE_URL: "${process.env.API_BASE_URL}",
+        DIVISION_ID: "${process.env.DIVISION_ID}",
+        INTERNAL_TOKEN: "${process.env.INTERNAL_TOKEN}"
+        };
+    `);
+}
