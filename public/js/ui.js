@@ -4,8 +4,56 @@ let API_BASE_URL;
 let DIVISION_ID;
 let INTERNAL_TOKEN;
 
+// ==============================
+// UI ELEMENTS (NUEVA LISTA)
+// ==============================
+const chkNewList = document.getElementById("newListCheck");
+const inputNewList = document.getElementById("newListName");
+const btnCreateList = document.getElementById("btnCreateList");
+
+// ==============================
+// ESTADO INICIAL (CRÍTICO)
+// ==============================
+function setNewListMode(enabled) {
+  if (!chkNewList || !inputNewList || !btnCreateList) return;
+
+  chkNewList.checked = enabled;
+
+  if (enabled) {
+    inputNewList.disabled = false;
+    inputNewList.focus();
+    btnCreateList.disabled = inputNewList.value.trim().length === 0;
+  } else {
+    inputNewList.value = "";
+    inputNewList.disabled = true;
+    btnCreateList.disabled = true;
+  }
+}
+
+function wireNewListToggle() {
+  if (!chkNewList || !inputNewList || !btnCreateList) return;
+
+  // default
+  setNewListMode(false);
+
+  chkNewList.addEventListener("change", () => {
+    setNewListMode(chkNewList.checked);
+  });
+
+  inputNewList.addEventListener("input", () => {
+    if (!chkNewList.checked) return;
+    btnCreateList.disabled = inputNewList.value.trim().length === 0;
+  });
+}
+
+// ==============================
+// INIT ENV (TU CÓDIGO)
+// ==============================
 async function initEnv() {
   try {
+    // 🔧 activar la lógica UI sin tocar APIs
+    wireNewListToggle();
+
     const res = await fetch("/api/env");
 
     if (!res.ok) {
@@ -32,6 +80,9 @@ async function initEnv() {
   }
 }
 
+// ==============================
+// LOAD CONTACT LISTS (TU CÓDIGO)
+// ==============================
 async function loadContactLists() {
   const select = document.getElementById("contactListSelect");
   select.innerHTML = "<option>Cargando...</option>";
@@ -49,14 +100,18 @@ async function loadContactLists() {
     }
 
     let data = {};
-    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
+    }
 
     // 🔥 Swagger: ContactListResponse.entities
     const items = Array.isArray(data.entities) ? data.entities : [];
 
     select.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
 
-    items.forEach(item => {
+    items.forEach((item) => {
       const opt = document.createElement("option");
       opt.value = item.id;
       opt.textContent = item.name;
