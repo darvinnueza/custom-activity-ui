@@ -1,7 +1,35 @@
-const { API_BASE_URL, DIVISION_ID } = window.__ENV__ || {};
+/* global Postmonger */
 
-if (!API_BASE_URL || !DIVISION_ID) {
-  throw new Error("Missing ENV variables");
+let API_BASE_URL;
+let DIVISION_ID;
+let INTERNAL_TOKEN;
+
+async function initEnv() {
+  try {
+    const res = await fetch("/api/env");
+
+    if (!res.ok) {
+      throw new Error("No se pudo cargar /api/env");
+    }
+
+    const env = await res.json();
+
+    API_BASE_URL = env.API_BASE_URL;
+    DIVISION_ID = env.DIVISION_ID;
+    INTERNAL_TOKEN = env.INTERNAL_TOKEN;
+
+    if (!API_BASE_URL || !DIVISION_ID) {
+      throw new Error("Missing ENV variables");
+    }
+
+    await loadContactLists();
+  } catch (err) {
+    console.error("ENV ERROR:", err);
+    const select = document.getElementById("contactListSelect");
+    if (select) {
+      select.innerHTML = "<option>Error cargando configuración</option>";
+    }
+  }
 }
 
 async function loadContactLists() {
@@ -24,18 +52,18 @@ async function loadContactLists() {
 
     select.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
 
-    items.forEach(i => {
+    items.forEach(item => {
       const opt = document.createElement("option");
-      opt.value = i.id;
-      opt.textContent = i.name;
+      opt.value = item.id;
+      opt.textContent = item.name;
       select.appendChild(opt);
     });
 
     select.disabled = false;
-  } catch (e) {
-    console.error(e);
-    select.innerHTML = `<option>Error cargando listas</option>`;
+  } catch (err) {
+    console.error("CONTACT LIST ERROR:", err);
+    select.innerHTML = "<option>Error cargando listas</option>";
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadContactLists);
+document.addEventListener("DOMContentLoaded", initEnv);
