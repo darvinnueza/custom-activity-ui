@@ -21,9 +21,8 @@ function setStatus(msg, type) {
   if (!createStatus) return;
 
   createStatus.textContent = msg || "";
-
-  // Mantener la clase base "status"
   createStatus.classList.remove("ok", "err");
+
   if (type === "ok") createStatus.classList.add("ok");
   if (type === "err") createStatus.classList.add("err");
 }
@@ -39,7 +38,7 @@ function setNewListMode(enabled) {
   chkNewList.checked = enabled;
 
   if (enabled) {
-    // Bloquea el select porque se ignora
+    // En modo "nueva lista" se ignora la lista existente
     selectContactLists.disabled = true;
 
     inputNewList.disabled = false;
@@ -47,19 +46,20 @@ function setNewListMode(enabled) {
 
     btnCreateList.disabled = inputNewList.value.trim().length === 0;
 
-    // En modo nueva lista, "Siguiente" debe estar deshabilitado
+    // En modo nueva lista, "Siguiente" queda deshabilitado hasta crear OK
     setNextEnabled(false);
   } else {
+    // Volver al modo "lista existente"
     inputNewList.value = "";
     inputNewList.disabled = true;
 
     btnCreateList.disabled = true;
 
-    // Reactiva el select
     selectContactLists.disabled = false;
 
     setStatus("", "");
-    // Siguiente depende de que exista selección
+
+    // Siguiente solo depende de selección existente
     setNextEnabled(!!selectContactLists.value);
   }
 }
@@ -67,7 +67,7 @@ function setNewListMode(enabled) {
 function wireNewListToggle() {
   if (!chkNewList || !inputNewList || !btnCreateList) return;
 
-  // default (bloqueado)
+  // default: apagado
   setNewListMode(false);
 
   chkNewList.addEventListener("change", () => {
@@ -113,7 +113,6 @@ async function loadContactLists(selectIdToSet = "") {
       data = {};
     }
 
-    // ✅ Swagger: ContactListResponse.entities
     const items = Array.isArray(data.entities) ? data.entities : [];
 
     selectContactLists.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
@@ -125,20 +124,17 @@ async function loadContactLists(selectIdToSet = "") {
       selectContactLists.appendChild(opt);
     });
 
-    // Si quieres setear un ID en particular (ej: luego de crear)
     if (selectIdToSet) {
       selectContactLists.value = selectIdToSet;
     }
 
-    // Si no estás en modo nueva lista, habilita select
+    // si NO estás en modo nueva lista, habilita select
     if (!chkNewList?.checked) {
       selectContactLists.disabled = false;
-    }
-
-    // Botón siguiente: solo si hay selección y no estás en modo nueva lista
-    if (!chkNewList?.checked) {
       setNextEnabled(!!selectContactLists.value);
     } else {
+      // modo nueva lista: select bloqueado
+      selectContactLists.disabled = true;
       setNextEnabled(false);
     }
   } catch (err) {
@@ -156,7 +152,6 @@ async function createContactList() {
     const name = (inputNewList?.value || "").trim();
     if (!name) return;
 
-    // ✅ CONTRATO (Swagger + servicio)
     const payload = {
       name,
       columnNames: ["request_id", "contact_key", "msisdn", "status", "activityId"],
@@ -167,7 +162,8 @@ async function createContactList() {
     btnCreateList.disabled = true;
     setStatus("Creando lista...", "");
 
-    const res = await fetch(`/api/genesys/contactlists`, {
+    // ✅ OJO: POST VA AL NUEVO ENDPOINT SEPARADO
+    const res = await fetch(`/api/genesys/contactlists-create`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${INTERNAL_TOKEN}`,
@@ -187,28 +183,30 @@ async function createContactList() {
 
     if (!res.ok) {
       console.error("CREATE LIST ERROR:", data || text);
+
       const msg =
         data?.error ||
         data?.message ||
         data?.details ||
         (typeof text === "string" && text.length < 200 ? text : "Error creando la lista.");
+
       setStatus(msg, "err");
 
-      // permitir reintento si sigue en modo nueva lista
+      // permitir reintento
       btnCreateList.disabled = inputNewList.value.trim().length === 0;
       return;
     }
 
     setStatus("Lista creada correctamente ✅", "ok");
 
-    // Refresca listas y selecciona la nueva
+    // refresca y selecciona la nueva
     const newId = data?.id || "";
     await loadContactLists(newId);
 
-    // salir de modo nueva lista
+    // salir del modo nueva lista (reactiva select)
     setNewListMode(false);
 
-    // ahora sí puede avanzar
+    // habilita siguiente si ya quedó seleccionada la nueva
     setNextEnabled(true);
   } catch (err) {
     console.error("CREATE LIST EXCEPTION:", err);
@@ -230,12 +228,13 @@ async function initEnv() {
     createStatus = document.getElementById("createStatus");
     btnNext = document.getElementById("btnNext");
 
+    // UI wiring
     wireNewListToggle();
 
-    // cambio de lista existente -> habilita siguiente
+    // change de lista existente -> habilita siguiente (si no está en modo nueva lista)
     if (selectContactLists) {
       selectContactLists.addEventListener("change", () => {
-        if (chkNewList?.checked) return; // si estás creando nueva, ignora
+        if (chkNewList?.checked) return;
         setNextEnabled(!!selectContactLists.value);
       });
     }
@@ -243,11 +242,12 @@ async function initEnv() {
     // click crear lista
     if (btnCreateList) {
       btnCreateList.addEventListener("click", () => {
-        if (!chkNewList.checked) return;
+        if (!chkNewList?.checked) return;
         createContactList();
       });
     }
 
+    // ENV
     const res = await fetch("/api/env");
     if (!res.ok) throw new Error("No se pudo cargar /api/env");
 
@@ -264,10 +264,12 @@ async function initEnv() {
     await loadContactLists();
   } catch (err) {
     console.error("ENV ERROR:", err);
+
     if (selectContactLists) {
       selectContactLists.innerHTML = "<option>Error cargando configuración</option>";
       selectContactLists.disabled = true;
     }
+
     setNextEnabled(false);
   }
 }

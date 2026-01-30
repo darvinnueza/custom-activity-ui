@@ -1,25 +1,21 @@
-export default async function handler(req, res) {
-  const { divisionId } = req.query;
-
-  if (!divisionId) {
-    return res.status(400).json({ error: "divisionId is required" });
-  }
-
-  const API_BASE_URL = (process.env.API_BASE_URL || "").replace(/\/$/, "");
-  const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || "";
-
-  if (!API_BASE_URL || !INTERNAL_TOKEN) {
-    return res.status(500).json({
-      error: "API_BASE_URL or INTERNAL_TOKEN not configured",
-    });
-  }
-
-  const url = `${API_BASE_URL}/genesys/contactlists?divisionId=${encodeURIComponent(
-    divisionId
-  )}`;
-
+module.exports = async (req, res) => {
   try {
-    const response = await fetch(url, {
+    const API_BASE_URL = process.env.API_BASE_URL;
+    const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN;
+
+    if (!API_BASE_URL) return res.status(500).json({ error: "Missing API_BASE_URL" });
+    if (!INTERNAL_TOKEN) return res.status(500).json({ error: "Missing INTERNAL_TOKEN" });
+
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
+
+    const { divisionId } = req.query;
+    if (!divisionId) return res.status(400).json({ error: "divisionId is required" });
+
+    const url = `${API_BASE_URL}/genesys/contactlists?divisionId=${encodeURIComponent(divisionId)}`;
+
+    const upstream = await fetch(url, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${INTERNAL_TOKEN}`,
@@ -27,16 +23,12 @@ export default async function handler(req, res) {
       },
     });
 
-    const text = await response.text();
+    const text = await upstream.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
 
-    try {
-      const json = text ? JSON.parse(text) : null;
-      return res.status(response.status).json(json);
-    } catch {
-      return res.status(response.status).send(text);
-    }
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Proxy error" });
+    return res.status(upstream.status).json(data);
+  } catch (e) {
+    return res.status(500).json({ error: "Internal error", message: e.message });
   }
-}
+};
