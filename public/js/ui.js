@@ -4,35 +4,57 @@ let API_BASE_URL;
 let DIVISION_ID;
 
 // ==============================
-// UI ELEMENTS (NUEVA LISTA)
+// UI ELEMENTS
 // ==============================
 const chkNewList = document.getElementById("newListCheck");
 const inputNewList = document.getElementById("newListName");
 const btnCreateList = document.getElementById("btnCreateList");
+const selectContactList = document.getElementById("contactListSelect");
+const statusEl = document.getElementById("createStatus");
 
 // ==============================
-// ESTADO INICIAL (CRÍTICO)
+// HELPERS
 // ==============================
+function setStatus(msg, type /* ok|err|'' */) {
+  if (!statusEl) return;
+  statusEl.textContent = msg || "";
+  statusEl.classList.remove("ok", "err");
+  if (type === "ok") statusEl.classList.add("ok");
+  if (type === "err") statusEl.classList.add("err");
+}
+
 function setNewListMode(enabled) {
-  if (!chkNewList || !inputNewList || !btnCreateList) return;
+  if (!chkNewList || !inputNewList || !btnCreateList || !selectContactList) return;
 
   chkNewList.checked = enabled;
 
   if (enabled) {
+    // modo crear
+    selectContactList.disabled = true;
+
     inputNewList.disabled = false;
     inputNewList.focus();
-    btnCreateList.disabled = inputNewList.value.trim().length === 0;
+
+    const name = inputNewList.value.trim();
+    btnCreateList.disabled = name.length === 0;
+
+    setStatus("", "");
   } else {
+    // modo seleccionar
     inputNewList.value = "";
     inputNewList.disabled = true;
     btnCreateList.disabled = true;
+
+    selectContactList.disabled = false;
+
+    setStatus("", "");
   }
 }
 
 function wireNewListToggle() {
-  if (!chkNewList || !inputNewList || !btnCreateList) return;
+  if (!chkNewList || !inputNewList || !btnCreateList || !selectContactList) return;
 
-  // default
+  // estado inicial (CRÍTICO)
   setNewListMode(false);
 
   chkNewList.addEventListener("change", () => {
@@ -43,6 +65,64 @@ function wireNewListToggle() {
     if (!chkNewList.checked) return;
     btnCreateList.disabled = inputNewList.value.trim().length === 0;
   });
+
+  btnCreateList.addEventListener("click", createContactList);
+}
+
+// ==============================
+// CREATE CONTACT LIST (POST)
+// ==============================
+async function createContactList() {
+  try {
+    const name = (inputNewList.value || "").trim();
+    if (!name) {
+      setStatus("Ingrese un nombre para la lista.", "err");
+      return;
+    }
+
+    btnCreateList.disabled = true;
+    setStatus("Creando lista...", "");
+
+    // Body SEGÚN SWAGGER
+    const payload = {
+      name,
+      columnNames: ["request_id", "contact_key", "msisdn", "status"],
+      phoneColumns: [{ columnName: "msisdn", type: "cell" }]
+    };
+
+    const res = await fetch("/api/genesys/contactlists", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+
+    let created = {};
+    try { created = text ? JSON.parse(text) : {}; } catch { created = {}; }
+
+    setStatus("Lista creada correctamente.", "ok");
+
+    // Recargar listas y seleccionar la nueva
+    await loadContactLists();
+
+    // Si tu API devuelve {id,name} (como swagger), selecciona
+    if (created && created.id) {
+      selectContactList.value = created.id;
+    }
+
+    // salir del modo crear
+    setNewListMode(false);
+
+  } catch (err) {
+    console.error("CREATE LIST ERROR:", err);
+    setStatus("Error creando la lista. Revise consola / network.", "err");
+    btnCreateList.disabled = false;
+  }
 }
 
 // ==============================
@@ -50,14 +130,11 @@ function wireNewListToggle() {
 // ==============================
 async function initEnv() {
   try {
-    // 🔧 activar la lógica UI sin tocar APIs
+    // activar lógica UI
     wireNewListToggle();
 
     const res = await fetch("/api/env");
-
-    if (!res.ok) {
-      throw new Error("No se pudo cargar /api/env");
-    }
+    if (!res.ok) throw new Error("No se pudo cargar /api/env");
 
     const env = await res.json();
 
@@ -71,9 +148,9 @@ async function initEnv() {
     await loadContactLists();
   } catch (err) {
     console.error("ENV ERROR:", err);
-    const select = document.getElementById("contactListSelect");
-    if (select) {
-      select.innerHTML = "<option>Error cargando configuración</option>";
+    if (selectContactList) {
+      selectContactList.innerHTML = "<option>Error cargando configuración</option>";
+      selectContactList.disabled = true;
     }
   }
 }
@@ -82,9 +159,10 @@ async function initEnv() {
 // LOAD CONTACT LISTS (TU CÓDIGO)
 // ==============================
 async function loadContactLists() {
-  const select = document.getElementById("contactListSelect");
-  select.innerHTML = "<option>Cargando...</option>";
-  select.disabled = true;
+  if (!selectContactList) return;
+
+  selectContactList.innerHTML = "<option>Cargando...</option>";
+  selectContactList.disabled = true;
 
   try {
     const res = await fetch(
@@ -92,35 +170,31 @@ async function loadContactLists() {
     );
 
     const text = await res.text();
-
-    if (!res.ok) {
-      throw new Error(text || `HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
 
     let data = {};
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch {
-      data = {};
-    }
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
 
-    // 🔥 Swagger: ContactListResponse.entities
+    // Swagger: ContactListResponse.entities
     const items = Array.isArray(data.entities) ? data.entities : [];
 
-    select.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
+    selectContactList.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
 
     items.forEach((item) => {
       const opt = document.createElement("option");
       opt.value = item.id;
       opt.textContent = item.name;
-      select.appendChild(opt);
+      selectContactList.appendChild(opt);
     });
 
-    select.disabled = false;
+    // Solo habilitar si NO estás en modo crear
+    if (!chkNewList.checked) {
+      selectContactList.disabled = false;
+    }
   } catch (err) {
     console.error("CONTACT LIST ERROR:", err);
-    select.innerHTML = "<option>Error cargando listas</option>";
-    select.disabled = true;
+    selectContactList.innerHTML = "<option>Error cargando listas</option>";
+    selectContactList.disabled = true;
   }
 }
 
