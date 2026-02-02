@@ -1,1 +1,0 @@
-# sfmc-custom-activity-vercel
