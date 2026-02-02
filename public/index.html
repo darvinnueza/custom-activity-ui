@@ -6,7 +6,8 @@
     <title>Custom Activity UI — VoiceBot</title>
 
     <style>
-      body { display: none; } /* Nadie ve nada hasta que el JS autorice */
+      /* Mantiene el formulario oculto por defecto para seguridad */
+      body { display: none; } 
     </style>
 
     <link rel="stylesheet" href="styles.css" />
@@ -56,29 +57,21 @@
     
     <script>
       (function() {
-        // 1. Verificamos que venga de Salesforce (la base de seguridad)
+        // Validación básica de iFrame (Punto 3 de Salesforce)
         const esIframe = window.self !== window.top;
         const vieneDeSFMC = document.referrer.includes("exacttarget.com") || 
                             document.referrer.includes("marketingcloudapps.com");
 
-        // 2. Pedimos la clave secreta
-        const miClaveSecreta = "voicebot2026"; // <--- CAMBIA ESTO POR LA TUYA
-        const passwordIngresado = prompt("Seguridad VoiceBot: Ingrese el Token de Acceso");
-
-        // 3. Si algo falla, bloqueamos de verdad
-        if (!esIframe || !vieneDeSFMC || passwordIngresado !== miClaveSecreta) {
+        if (!esIframe || !vieneDeSFMC) {
           document.documentElement.innerHTML = `
-            <body style="font-family:sans-serif; text-align:center; padding-top:50px; background:#f4f4f4;">
-              <h1 style="color:#d32f2f;">403 - Acceso Restringido</h1>
-              <p>Token incorrecto o acceso fuera de Salesforce Marketing Cloud.</p>
-              <img src="https://cdn-icons-png.flaticon.com/512/1160/1160515.png" width="100" style="margin-top:20px;">
+            <body style="font-family:sans-serif; text-align:center; padding-top:50px;">
+              <h1 style="color:red;">403 - Acceso Denegado</h1>
+              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud.</p>
             </body>`;
-          throw new Error("Fallo en autenticación manual");
-        } else {
-          // Si todo está OK, encendemos las luces
-          document.body.style.display = "block";
-          console.log("Acceso concedido");
+          throw new Error("Acceso no autorizado");
         }
+        // NOTA: No hacemos "display: block" aquí. 
+        // Lo hará el ui.js después de validar el JWT con el servidor.
       })();
     </script>
 
