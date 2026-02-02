@@ -82,6 +82,14 @@ connection.on('clickedNext', function () {
     }
 });
 
+function setNewListMode(enabled) {
+    if (!chkNewList) return;
+    selectContactLists.disabled = enabled;
+    inputNewList.disabled = !enabled;
+    btnCreateList.disabled = !enabled || inputNewList.value.trim().length === 0;
+    if (enabled) inputNewList.focus();
+}
+
 // ==============================
 // INIT
 // ==============================
