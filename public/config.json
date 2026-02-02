@@ -1,60 +1,60 @@
 {
-  "workflowApiVersion": "1.1",
-  "metaData": {
-    "icon": "images/icon40.png",
-    "category": "custom",
-    "isConfigured": false,
-    "configOnDrop": true
-  },
-  "type": "REST",
-  "lang": {
-    "es-EC": {
-      "name": "VoiceBot - Custom Activity",
-      "description": "Ejecuta lógica outbound para VoiceBot"
-    }
-  },
-  "arguments": {
-    "execute": {
-      "inArguments": [
-        { "request_id": "{{Event.request_id}}" },
-        { "contact_key": "{{Event.contact_key}}" },
-        { "msisdn": "{{Event.msisdn}}" },
-        { "status": "{{Event.status}}" }
-      ],
-      "outArguments": [],
-      "timeout": 20000,
-      "retryCount": 0,
-      "retryDelay": 1000,
-      "concurrentRequests": 6,
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
-      "useJwt": true
-    }
-  },
-  "configurationArguments": {
-    "applicationExtensionKey": "6e56e2c2-47c2-4f56-89cd-3f298a7a52a1",
-    "save": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
-      "useJwt": true
+    "workflowApiVersion": "1.1",
+    "metaData": {
+        "icon": "images/icon40.png",
+        "category": "custom",
+        "isConfigured": false,
+        "configOnDrop": true
     },
-    "publish": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
-      "useJwt": true
+    "type": "REST",
+    "lang": {
+        "es-EC": {
+        "name": "VoiceBot - Custom Activity",
+        "description": "Ejecuta lógica outbound para VoiceBot"
+        }
     },
-    "validate": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
-      "useJwt": true
+    "arguments": {
+        "execute": {
+            "inArguments": [
+                { "request_id": "{{Event.request_id}}" },
+                { "contact_key": "{{Event.contact_key}}" },
+                { "msisdn": "{{Event.msisdn}}" },
+                { "status": "{{Event.status}}" }
+            ],
+            "outArguments": [],
+            "timeout": 20000,
+            "retryCount": 0,
+            "retryDelay": 1000,
+            "concurrentRequests": 6,
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
+            "useJwt": true
+        }
     },
-    "stop": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/stop",
-      "useJwt": true
+    "configurationArguments": {
+        "applicationExtensionKey": "6e56e2c2-47c2-4f56-89cd-3f298a7a52a1",
+        "save": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
+            "useJwt": true
+        },
+        "publish": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
+            "useJwt": true
+        },
+        "validate": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
+            "useJwt": true
+        },
+        "stop": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/stop",
+            "useJwt": true
+        }
+    },
+    "userInterfaces": {
+        "configModal": {
+            "url": "https://custom-activity-ui-two.vercel.app/index.html",
+            "height": 600,
+            "width": 900,
+            "fullscreen": false
+        }
     }
-  },
-  "userInterfaces": {
-    "configModal": {
-      "url": "https://custom-activity-ui-two.vercel.app/index.html",
-      "height": 600,
-      "width": 900,
-      "fullscreen": false
-    }
-  }
 }
