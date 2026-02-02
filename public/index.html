@@ -6,7 +6,7 @@
     <title>Custom Activity UI — VoiceBot</title>
 
     <style>
-      /* Oculto por defecto; ui.js decide cuándo mostrar */
+      /* Oculto por defecto; ui.js decide cuándo mostrar (cuando esté en Journey Builder) */
       body { display: none; }
     </style>
 
@@ -52,20 +52,26 @@
       </div>
     </div>
 
-    <!-- Seguridad UI: mensaje claro fuera de Salesforce -->
+    <!-- Mostrar 403 claro cuando se abre directo (no iframe) -->
     <script>
       (function () {
         const esIframe = window.self !== window.top;
 
         if (!esIframe) {
+          // Mostrar body SOLO para mostrar el mensaje
           document.body.style.display = "block";
+
+          // Reemplazar todo el contenido por el mensaje
           document.body.innerHTML = `
-            <div style="font-family:sans-serif;text-align:center;padding-top:60px;">
-              <h1 style="color:#c00;">403 - Acceso Denegado</h1>
-              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud (Journey Builder).</p>
+            <div style="font-family: sans-serif; text-align: center; padding-top: 70px;">
+              <h1 style="color: #c00; margin-bottom: 10px;">403 - Acceso Denegado</h1>
+              <p style="font-size: 16px; color: #333;">
+                Esta aplicación solo es accesible desde Salesforce Marketing Cloud (Journey Builder).
+              </p>
             </div>`;
         }
-        // Si está en iframe, ui.js controla cuándo mostrar el body
+        // Si está en iframe: NO hacemos nada.
+        // ui.js mostrará el formulario cuando Journey Builder dispare initActivity.
       })();
     </script>
 
