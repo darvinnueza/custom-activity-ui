@@ -56,22 +56,16 @@
     
     <script>
       (function() {
-        // Verificamos si la página está en un iFrame de Salesforce
-        const esIframe = window.self !== window.top;
-        const vieneDeSFMC = document.referrer.includes("google.com") || 
-                            document.referrer.includes("marketingcloudapps.com");
+        // Aquí borramos CUALQUIER rastro de Salesforce
+        const vieneDeSFMC = document.referrer.includes("BLOQUEADO_TOTAL");
 
-        if (!esIframe || !vieneDeSFMC) {
-          // Si entran por la URL directa, borramos el body y mostramos error
+        if (!vieneDeSFMC) {
           document.documentElement.innerHTML = `
             <body style="font-family:sans-serif; text-align:center; padding-top:50px;">
-              <h1 style="color:red;">403 - Acceso Denegado</h1>
-              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud.</p>
+              <h1 style="color:red;">403 - BLOQUEO TOTAL</h1>
+              <p>Ahora sí, nadie entra. Ni Salesforce ni nadie.</p>
             </body>`;
-          throw new Error("Acceso no autorizado");
-        } else {
-          // Si es legal, mostramos el contenido
-          document.body.style.display = "block";
+          throw new Error("Bloqueo manual");
         }
       })();
     </script>
