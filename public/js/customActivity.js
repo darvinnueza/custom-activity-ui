@@ -1,53 +1,44 @@
 /* global Postmonger */
-
 (function () {
-    const connection = new Postmonger.Session();
-    let payload = {};
+  const connection = new Postmonger.Session();
+  let payload = {};
 
-    // 1) Journey envía la activity (payload)
-    connection.on("initActivity", function (data) {
-        console.log("initActivity", data);
-        payload = data || {};
-        console.log("INIT execute.url =", payload?.arguments?.execute?.url);
-    });
+  // ✅ Handshake PRIMERO (evita spinner)
+  connection.trigger("ready");
+  connection.trigger("requestTokens");
+  connection.trigger("requestEndpoints");
 
-    // 2) Guardar / Listo
-    connection.on("clickedNext", function () {
-        console.log("clickedNext");
+  connection.on("initActivity", function (data) {
+    payload = data || {};
+  });
 
-        // Asegura estructura
-        payload.arguments = payload.arguments || {};
-        payload.arguments.execute = payload.arguments.execute || {};
-        payload.metaData = payload.metaData || {};
+  function save(action) {
+    payload.metaData = payload.metaData || {};
+    payload.arguments = payload.arguments || {};
+    payload.arguments.execute = payload.arguments.execute || {};
 
-        // ✅ CLAVE: marca la actividad como configurada
-        payload.metaData.isConfigured = true;
+    // ✅ UN SOLO OBJETO en inArguments
+    payload.arguments.execute.inArguments = [
+      {
+        request_id: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.request_id}}",
+        contact_key: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.contact_key}}",
+        msisdn: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.msisdn}}",
+        status: "{{Event.VOICEBOT_DEMO_CAMPAIGN_1.status}}"
+      }
+    ];
 
-        // ✅ Envía campos de tu Data Extension hacia /sfmc/execute
-        payload.arguments.execute.inArguments = [
-            { request_id: "{{Event.request_id}}" },
-            { contact_key: "{{Event.contact_key}}" },
-            { msisdn: "{{Event.msisdn}}" },
-            { status: "{{Event.status}}" }
-        ];
+    payload.metaData.isConfigured = true;
 
-        // Guarda
-        connection.trigger("updateActivity", payload);
+    connection.trigger("updateActivity", payload);
+    connection.trigger("setActivityValid", true);
+    connection.trigger(action); // "next" o "done"
+  }
 
-        // ✅ (en muchos tenants) marca la actividad como válida
-        connection.trigger("setActivityValid", true);
+  // ✅ Soporta ambos botones
+  connection.on("clickedNext", function () { save("next"); });
+  connection.on("clickedDone", function () { save("done"); });
 
-        // Cierra el modal
-        connection.trigger("next");
-    });
-
-    // 3) Cancelar
-    connection.on("clickedCancel", function () {
-        connection.trigger("cancel");
-    });
-
-    // 4) Handshake (mejor al final)
-    connection.trigger("ready");
-    connection.trigger("requestTokens");
-    connection.trigger("requestEndpoints");
+  connection.on("clickedCancel", function () {
+    connection.trigger("cancel");
+  });
 })();
