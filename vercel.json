@@ -1,7 +1,7 @@
 {
     "headers": [
         {
-            "source": "/(.*)",
+        "source": "/(.*)",
             "headers": [
                 { "key": "Access-Control-Allow-Origin", "value": "*" },
                 { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' *.exacttarget.com *.marketingcloudapps.com *.salesforce.com" }
