@@ -8,6 +8,7 @@
     connection.on("initActivity", function (data) {
         console.log("initActivity", data);
         payload = data || {};
+        console.log("INIT execute.url =", payload?.arguments?.execute?.url);
     });
 
     // 2) Guardar / Listo
