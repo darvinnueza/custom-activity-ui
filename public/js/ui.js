@@ -8,7 +8,6 @@ let INTERNAL_TOKEN;
 let stepContact, stepCampaign, selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus, campaignSelect;
 
 async function initEnv() {
-    // 1. Vincular elementos
     stepContact = document.getElementById("stepContact");
     stepCampaign = document.getElementById("stepCampaign");
     selectContactLists = document.getElementById("contactListSelect");
@@ -18,36 +17,38 @@ async function initEnv() {
     createStatus = document.getElementById("createStatus");
     campaignSelect = document.getElementById("campaignSelect");
 
-    // 2. ESTADO INICIAL (Esto es lo que faltaba al recargar)
-    // Forzamos el estado visual correcto desde el inicio
+    // --- ESTADO INICIAL ---
     inputNewList.disabled = true;
     btnCreateList.disabled = true;
-    chkNewList.checked = false; 
 
-    // 3. Lógica de validación
+    const validarBotonSiguiente = () => {
+        const hayListaSeleccionada = selectContactLists.value !== "";
+        // Si hay una lista elegida, avisamos a SFMC que puede habilitar el botón "Next"
+        if (hayListaSeleccionada) {
+            connection.trigger('updateButton', { button: 'next', enabled: true });
+        } else {
+            connection.trigger('updateButton', { button: 'next', enabled: false });
+        }
+    };
+
     const refrescarInterfaz = () => {
         const estaMarcado = chkNewList.checked;
         const tieneTexto = inputNewList.value.trim().length > 0;
 
-        // El input solo funciona si el check está puesto
         inputNewList.disabled = !estaMarcado;
         selectContactLists.disabled = estaMarcado;
-
-        // El botón SOLO se habilita si está marcado Y hay texto
         btnCreateList.disabled = !(estaMarcado && tieneTexto);
+        
+        validarBotonSiguiente();
     };
 
-    // Escuchadores de eventos
-    chkNewList.addEventListener("change", () => {
-        refrescarInterfaz();
-        if (chkNewList.checked) inputNewList.focus();
-    });
-
+    // Listeners
+    chkNewList.addEventListener("change", refrescarInterfaz);
     inputNewList.addEventListener("input", refrescarInterfaz);
+    selectContactLists.addEventListener("change", validarBotonSiguiente); // ¡Pilas con esto!
 
     btnCreateList.onclick = createContactList;
 
-    // 4. Carga de datos
     try {
         const res = await fetch("/api/env");
         const env = await res.json();
@@ -61,9 +62,6 @@ async function initEnv() {
     }
 }
 
-// ==============================
-// CREACIÓN (Ruta /create corregida)
-// ==============================
 async function createContactList() {
     const name = inputNewList.value.trim();
     if (!name) return;
@@ -87,18 +85,19 @@ async function createContactList() {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error en el servidor");
+        if (!res.ok) throw new Error(data.message || "Error al crear");
 
         createStatus.textContent = "¡Lista creada!";
         
-        // Volver al estado inicial tras éxito
         chkNewList.checked = false;
         inputNewList.value = "";
         inputNewList.disabled = true;
         selectContactLists.disabled = false;
-        btnCreateList.disabled = true;
         
         await loadContactLists(data.id);
+        
+        // Al crearla y seleccionarla, habilitamos el botón Siguiente
+        connection.trigger('updateButton', { button: 'next', enabled: true });
 
     } catch (err) {
         createStatus.textContent = "Error: " + err.message;
@@ -116,7 +115,9 @@ async function loadContactLists(selectIdToSet = "") {
         (data.entities || []).forEach(item => {
             selectContactLists.add(new Option(item.name, item.id));
         });
-        if (selectIdToSet) selectContactLists.value = selectIdToSet;
+        if (selectIdToSet) {
+            selectContactLists.value = selectIdToSet;
+        }
     } catch (e) {
         console.error("Error cargando listas");
     }
