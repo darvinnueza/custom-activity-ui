@@ -75,7 +75,7 @@ async function createContactList() {
 
     try {
         // Usando la ruta exacta del swagger
-        const res = await fetch(`/api/genesys/contactlists`, {
+        const res = await fetch(`/api/genesys/contactlists/create`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${INTERNAL_TOKEN}`,
