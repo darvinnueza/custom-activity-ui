@@ -6,67 +6,84 @@
     <title>Custom Activity UI — VoiceBot</title>
 
     <style>
-      /* Mantiene el formulario oculto por defecto para seguridad */
-      body { display: none; } 
+      body { display: none; font-family: sans-serif; }
+      .forbidden {
+        display: block;
+        text-align: center;
+        padding: 60px;
+      }
+      .forbidden h1 {
+        color: #c0392b;
+      }
     </style>
 
     <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body>
-    <div class="app-header">Custom Activity UI — VoiceBot</div>
+    <div id="app">
+      <div class="app-header">Custom Activity UI — VoiceBot</div>
 
-    <div class="container">
-      <div class="card">
-        <section id="stepContact">
-          <h2>Configuración de Lista de Contactos</h2>
-          <p class="subtitle">Elige una lista de contactos existente o define una nueva.</p>
-          
-          <label for="contactListSelect">Lista de Contactos Existente</label>
-          <select id="contactListSelect"><option>Cargando...</option></select>
+      <div class="container">
+        <div class="card">
+          <section id="stepContact">
+            <h2>Configuración de Lista de Contactos</h2>
+            <p class="subtitle">Elige una lista de contactos existente o define una nueva.</p>
 
-          <div class="checkbox">
-            <input type="checkbox" id="newListCheck" />
-            <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
-          </div>
+            <label for="contactListSelect">Lista de Contactos Existente</label>
+            <select id="contactListSelect"><option>Cargando...</option></select>
 
-          <label for="newListName">Nombre de la Nueva Lista</label>
-          <div class="inline-create">
-            <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
-            <button id="btnCreateList" type="button" disabled>Crear Lista</button>
-          </div>
-          <small id="createStatus" class="status"></small>
+            <div class="checkbox">
+              <input type="checkbox" id="newListCheck" />
+              <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
+            </div>
 
-          <div class="nav">
-            <button id="btnNext" type="button" disabled>Siguiente</button>
-          </div>
-        </section>
+            <label for="newListName">Nombre de la Nueva Lista</label>
+            <div class="inline-create">
+              <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
+              <button id="btnCreateList" type="button" disabled>Crear Lista</button>
+            </div>
 
-        <section id="stepCampaign" style="display:none;">
-          <h2>Configuración de Campaña</h2>
-          <select id="campaignSelect"><option value="">Cargando...</option></select>
-          <div class="nav">
-            <button id="btnBack" type="button">Atrás</button>
-          </div>
-        </section>
+            <small id="createStatus" class="status"></small>
+
+            <div class="nav">
+              <button id="btnNext" type="button" disabled>Siguiente</button>
+            </div>
+          </section>
+
+          <section id="stepCampaign" style="display:none;">
+            <h2>Configuración de Campaña</h2>
+            <select id="campaignSelect"><option value="">Cargando...</option></select>
+            <div class="nav">
+              <button id="btnBack" type="button">Atrás</button>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
 
-    <script src="js/postmonger.js"></script>
-    <script src="js/customActivity.js"></script>
-
-    <!-- VALIDACIÓN SEGURA (NO destructiva) -->
+    <!-- BLOQUEO CLARO FUERA DE SALESFORCE -->
     <script>
       (function () {
         const esIframe = window.self !== window.top;
 
         if (!esIframe) {
-          console.warn("UI abierta fuera de Salesforce (bloqueo real por JWT)");
-          // NO se bloquea aquí para no romper el UI
+          document.body.innerHTML = `
+            <div class="forbidden">
+              <h1>403 - Acceso denegado</h1>
+              <p>Esta interfaz solo puede utilizarse desde Salesforce Marketing Cloud.</p>
+            </div>
+          `;
+          return;
         }
+
+        // Solo si está en iframe se muestra el UI
+        document.body.style.display = "block";
       })();
     </script>
 
+    <script src="js/postmonger.js"></script>
+    <script src="js/customActivity.js"></script>
     <script src="js/ui.js"></script>
   </body>
 </html>
