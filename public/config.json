@@ -22,26 +22,27 @@
           { "updated_at": "{{Event.updated_at}}" }
         ],
         "outArguments": [],
-        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
+        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
+        "useJwt": true
     }
   },
   "configurationArguments": {
     "applicationExtensionKey": "366758bd-3a42-493d-af36-723b782bcfde",
     "save": {
       "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
-      "useJwt": false
+      "useJwt": true
     },
     "publish": {
       "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
-      "useJwt": false
+      "useJwt": true
     },
     "validate": {
       "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
-      "useJwt": false
+      "useJwt": true
     },
     "stop": {
       "url": "https://custom-activity-service.vercel.app/stop",
-      "useJwt": false
+      "useJwt": true
     }
   },
   "userInterfaces": {
@@ -49,7 +50,8 @@
       "url": "https://custom-activity-service.vercel.app/",
       "height": 600,
       "width": 800,
-      "fullscreen": false
+      "fullscreen": false,
+      "useJwt": true
     }
   }
 }
