@@ -52,6 +52,23 @@
       </div>
     </div>
 
+    <!-- Seguridad UI: mensaje claro fuera de Salesforce -->
+    <script>
+      (function () {
+        const esIframe = window.self !== window.top;
+
+        if (!esIframe) {
+          document.body.style.display = "block";
+          document.body.innerHTML = `
+            <div style="font-family:sans-serif;text-align:center;padding-top:60px;">
+              <h1 style="color:#c00;">403 - Acceso Denegado</h1>
+              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud (Journey Builder).</p>
+            </div>`;
+        }
+        // Si está en iframe, ui.js controla cuándo mostrar el body
+      })();
+    </script>
+
     <script src="js/postmonger.js"></script>
     <script src="js/customActivity.js"></script>
     <script src="js/ui.js"></script>
