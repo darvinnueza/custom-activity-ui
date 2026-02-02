@@ -1,0 +1,11 @@
+{
+    "headers": [
+        {
+        "source": "/config.json",
+        "headers": [
+            { "key": "Content-Type", "value": "application/json" },
+            { "key": "Cache-Control", "value": "no-store" }
+        ]
+        }
+    ]
+}
