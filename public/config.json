@@ -7,30 +7,47 @@
     "type": "REST",
     "lang": {
         "en-US": {
-        "name": "Custom Activity Demo",
-        "description": "Custom Activity Demo"
+            "name": "Custom Activity Demo",
+            "description": "Custom Activity Demo"
         }
     },
     "arguments": {
         "execute": {
-        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
         "inArguments": [
             { "request_id": "{{Event.request_id}}" },
             { "contact_key": "{{Event.contact_key}}" },
             { "msisdn": "{{Event.msisdn}}" },
             { "status": "{{Event.status}}" }
         ],
-        "outArguments": []
+        "outArguments": [],
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
         }
     },
     "configurationArguments": {
-        "applicationExtensionKey": "366758bd-3a42-493d-af36-723b782bcfde"
+        "applicationExtensionKey": "366758bd-3a42-493d-af36-723b782bcfde",
+        "save": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
+            "useJwt": false
+        },
+        "publish": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
+            "useJwt": false
+        },
+        "validate": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
+            "useJwt": false
+        },
+        "stop": {
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/stop",
+            "useJwt": false
+        }
     },
     "userInterfaces": {
         "configModal": {
-        "height": 600,
-        "width": 800,
-        "url": "https://custom-activity-ui-tau.vercel.app/"
+            "url": "https://custom-activity-ui-tau.vercel.app/",
+            "height": 600,
+            "width": 800,
+            "fullscreen": false
         }
     }
 }
