@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "postmonger": "^0.0.16"
+    "postmonger": "^0.0.16",
+    "jsonwebtoken": "^9.0.0"
   }
 }

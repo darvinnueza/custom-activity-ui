@@ -6,34 +6,27 @@ let DIVISION_ID;
 let INTERNAL_TOKEN;
 let AUTH_TOKEN_JWT; 
 
-// --- 1. VALIDACIÓN DE JWT EN CARGA (Lo que pidió Salesforce) ---
+// SECCIÓN DE VALIDACIÓN (Al inicio del archivo)
 connection.on('initActivity', async function (data) {
-    if (data) {
-        payload = data;
-    }
-    
-    // Guardamos el token que viene de Salesforce
-    AUTH_TOKEN_JWT = data.jwt; 
+    if (data && data.jwt) {
+        AUTH_TOKEN_JWT = data.jwt; 
 
-    if (AUTH_TOKEN_JWT) {
         try {
-            // Enviamos el JWT a tu API para validar contra el Secreto
-            const verify = await fetch('/api/auth/validate', {
+            // Llamamos a nuestra API para validar e imprimir el log
+            const res = await fetch('/api/auth/validate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: AUTH_TOKEN_JWT })
             });
 
-            if (verify.ok) {
-                // Si el servidor dice que el JWT es real, mostramos el HTML
+            if (res.ok) {
+                // Si todo está bien, mostramos el formulario
                 document.body.style.display = "block";
-                console.log("Acceso autorizado por Salesforce JWT");
             } else {
-                throw new Error("JWT Inválido");
+                throw new Error("Acceso no autorizado");
             }
         } catch (err) {
-            document.documentElement.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>403 - Error de Autenticación Salesforce</h1>";
-            console.error("Fallo de validación JWT:", err);
+            document.documentElement.innerHTML = "<h1>403 - Error de Firma JWT</h1>";
         }
     }
 });
