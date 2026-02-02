@@ -54,27 +54,6 @@
 
     <script src="js/postmonger.js"></script>
     <script src="js/customActivity.js"></script>
-    
-    <script>
-      (function() {
-        // Validación básica de iFrame (Punto 3 de Salesforce)
-        const esIframe = window.self !== window.top;
-        const vieneDeSFMC = document.referrer.includes("exacttarget.com") || 
-                            document.referrer.includes("marketingcloudapps.com");
-
-        if (!esIframe || !vieneDeSFMC) {
-          document.documentElement.innerHTML = `
-            <body style="font-family:sans-serif; text-align:center; padding-top:50px;">
-              <h1 style="color:red;">403 - Acceso Denegado</h1>
-              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud.</p>
-            </body>`;
-          throw new Error("Acceso no autorizado");
-        }
-        // NOTA: No hacemos "display: block" aquí. 
-        // Lo hará el ui.js después de validar el JWT con el servidor.
-      })();
-    </script>
-
     <script src="js/ui.js"></script>
   </body>
 </html>
