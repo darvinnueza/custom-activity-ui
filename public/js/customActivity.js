@@ -1,42 +1,31 @@
 /* global Postmonger */
-(function () {
-    let payload = {};
-    let connection = new Postmonger.Session(); // Inicializar fuera para evitar nulos
+const connection = new Postmonger.Session();
 
-    function init() {
-        // Escuchar cuando el Journey Builder nos envía la configuración actual
-        connection.on("initActivity", function (data) {
-            payload = data || {};
-            console.log("Payload recibido de SFMC:", JSON.stringify(payload));
-        });
+// Esperar a que el DOM esté cargado
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Notificar a Salesforce que la UI está lista
+    connection.trigger('ready');
+});
 
-        // Eventos de botones del Modal
-        connection.on("clickedNext", save);
-        connection.on("clickedDone", save);
+// 2. Escuchar cuando Salesforce inicializa la actividad
+connection.on('initActivity', function(data) {
+    console.log('Datos recibidos de SFMC:', data);
+});
 
-        // Notificar que la UI está lista para recibir datos
-        connection.trigger("ready");
-    }
+// 3. Escuchar cuando el usuario hace clic en el botón "Siguiente" de Salesforce
+connection.on('clickedNext', function() {
+    // Aquí es donde validarías si el usuario eligió algo en tu UI
+    // Por ahora, simplemente guardamos y cerramos
+    save();
+});
 
-    function save() {
-        payload.metaData = payload.metaData || {};
-        payload.arguments = payload.arguments || {};
-        payload.arguments.execute = payload.arguments.execute || {};
+function save() {
+    const payload = {
+        metaData: {
+            isConfigured: true
+        }
+    };
 
-        // Importante: Asegúrate de que estos campos existan en tu Data Extension de entrada
-        payload.arguments.execute.inArguments = [
-            {
-                "request_id": "{{Event.request_id}}",
-                "contact_key": "{{Event.contact_key}}",
-                "msisdn": "{{Event.msisdn}}",
-                "status": "{{Event.status}}"
-            }
-        ];
-
-        payload.metaData.isConfigured = true;
-
-        connection.trigger("updateActivity", payload);
-    }
-
-    window.addEventListener("load", init);
-})();
+    // Avisar a Salesforce que actualice la actividad con estos datos
+    connection.trigger('updateActivity', payload);
+}
