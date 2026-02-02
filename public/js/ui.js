@@ -5,10 +5,10 @@ let payload = {};
 let DIVISION_ID;
 let INTERNAL_TOKEN;
 
-// Elementos de la interfaz
 let stepContact, stepCampaign, selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus, campaignSelect;
 
 async function initEnv() {
+    // 1. Vincular elementos
     stepContact = document.getElementById("stepContact");
     stepCampaign = document.getElementById("stepCampaign");
     selectContactLists = document.getElementById("contactListSelect");
@@ -18,28 +18,36 @@ async function initEnv() {
     createStatus = document.getElementById("createStatus");
     campaignSelect = document.getElementById("campaignSelect");
 
-    // --- LÓGICA DE CONTROL ---
-    
-    // Función simple para habilitar el botón
-    const refrescarBoton = () => {
+    // 2. ESTADO INICIAL (Esto es lo que faltaba al recargar)
+    // Forzamos el estado visual correcto desde el inicio
+    inputNewList.disabled = true;
+    btnCreateList.disabled = true;
+    chkNewList.checked = false; 
+
+    // 3. Lógica de validación
+    const refrescarInterfaz = () => {
+        const estaMarcado = chkNewList.checked;
         const tieneTexto = inputNewList.value.trim().length > 0;
-        // Solo habilitar si el check está marcado Y hay texto escrito
-        btnCreateList.disabled = !(chkNewList.checked && tieneTexto);
+
+        // El input solo funciona si el check está puesto
+        inputNewList.disabled = !estaMarcado;
+        selectContactLists.disabled = estaMarcado;
+
+        // El botón SOLO se habilita si está marcado Y hay texto
+        btnCreateList.disabled = !(estaMarcado && tieneTexto);
     };
 
+    // Escuchadores de eventos
     chkNewList.addEventListener("change", () => {
-        selectContactLists.disabled = chkNewList.checked;
-        inputNewList.disabled = !chkNewList.checked;
+        refrescarInterfaz();
         if (chkNewList.checked) inputNewList.focus();
-        refrescarBoton();
     });
 
-    inputNewList.addEventListener("input", refrescarBoton);
+    inputNewList.addEventListener("input", refrescarInterfaz);
 
-    // Asignar el clic directamente
     btnCreateList.onclick = createContactList;
 
-    // Cargar credenciales
+    // 4. Carga de datos
     try {
         const res = await fetch("/api/env");
         const env = await res.json();
@@ -54,18 +62,16 @@ async function initEnv() {
 }
 
 // ==============================
-// CREACIÓN (Con tu ruta exacta)
+// CREACIÓN (Ruta /create corregida)
 // ==============================
 async function createContactList() {
     const name = inputNewList.value.trim();
     if (!name) return;
 
     createStatus.textContent = "Creando lista...";
-    createStatus.style.color = "blue";
     btnCreateList.disabled = true; 
 
     try {
-        // USANDO LA RUTA QUE TÚ DICES: /create
         const res = await fetch(`/api/genesys/contactlists/create`, {
             method: "POST",
             headers: {
@@ -83,21 +89,19 @@ async function createContactList() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Error en el servidor");
 
-        createStatus.textContent = "¡Lista creada correctamente!";
-        createStatus.style.color = "green";
+        createStatus.textContent = "¡Lista creada!";
         
-        // Reset de UI para volver a modo selección
+        // Volver al estado inicial tras éxito
         chkNewList.checked = false;
         inputNewList.value = "";
         inputNewList.disabled = true;
         selectContactLists.disabled = false;
+        btnCreateList.disabled = true;
         
-        // Recargar el dropdown y seleccionar la nueva lista automáticamente
         await loadContactLists(data.id);
 
     } catch (err) {
         createStatus.textContent = "Error: " + err.message;
-        createStatus.style.color = "red";
         btnCreateList.disabled = false;
     }
 }
@@ -108,14 +112,12 @@ async function loadContactLists(selectIdToSet = "") {
             headers: { "Authorization": `Bearer ${INTERNAL_TOKEN}` }
         });
         const data = await res.json();
-        
         selectContactLists.innerHTML = '<option value="">-- Seleccione una lista --</option>';
         (data.entities || []).forEach(item => {
             selectContactLists.add(new Option(item.name, item.id));
         });
-
         if (selectIdToSet) selectContactLists.value = selectIdToSet;
-    } catch (err) {
+    } catch (e) {
         console.error("Error cargando listas");
     }
 }
