@@ -1,8 +1,5 @@
 /* global Postmonger */
 
-// ==============================
-// 1. CONFIGURACIÓN Y ESTADO
-// ==============================
 const connection = new Postmonger.Session();
 let payload = {};
 let DIVISION_ID = "";
@@ -21,35 +18,45 @@ const btnBack = document.getElementById("btnBack");
 const createStatus = document.getElementById("createStatus");
 
 // ==============================
-// 2. INICIALIZACIÓN
+// INICIALIZACIÓN
 // ==============================
 document.addEventListener("DOMContentLoaded", async () => {
-    // Escuchar cambios en el selector para habilitar el botón Siguiente
-    contactSelect.addEventListener("change", () => {
-        btnNext.disabled = !contactSelect.value;
-    });
-
-    // Manejo del checkbox de "Nueva Lista"
+    
+    // 1. Lógica del Checkbox (Bloquear/Desbloquear campos)
     chkNewList.addEventListener("change", () => {
         const isChecked = chkNewList.checked;
+        
+        // Si el check está marcado: habilita input de texto, bloquea el selector de arriba
         contactSelect.disabled = isChecked;
         inputNewList.disabled = !isChecked;
+        
+        // Solo habilita el botón de crear si hay texto y el check está marcado
         btnCreateList.disabled = !isChecked || inputNewList.value.trim().length === 0;
         
         if (isChecked) {
-            btnNext.disabled = true; // Bloquear siguiente hasta que cree la lista
+            btnNext.disabled = true; // No puede avanzar hasta que cree la lista
             inputNewList.focus();
         } else {
+            // Si desmarca, vuelve a validar el selector de arriba
             btnNext.disabled = !contactSelect.value;
         }
     });
 
-    // Habilitar botón de crear solo si hay texto
+    // 2. Habilitar botón de crear MIENTRAS se escribe (si el check está activo)
     inputNewList.addEventListener("input", () => {
-        btnCreateList.disabled = !chkNewList.checked || inputNewList.value.trim().length === 0;
+        if (chkNewList.checked) {
+            btnCreateList.disabled = inputNewList.value.trim().length === 0;
+        }
     });
 
-    // Cargar variables de entorno y datos iniciales
+    // 3. Validar selector normal
+    contactSelect.addEventListener("change", () => {
+        if (!chkNewList.checked) {
+            btnNext.disabled = !contactSelect.value;
+        }
+    });
+
+    // 4. Obtener entorno y cargar datos
     try {
         const res = await fetch("/api/env");
         const env = await res.json();
@@ -59,14 +66,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         await loadContactLists();
         connection.trigger('ready');
     } catch (e) {
-        console.error("Error al inicializar:", e);
+        console.error("Error inicializando:", e);
     }
 });
 
-// ==============================
-// 3. LOGICA DE NAVEGACIÓN
-// ==============================
-
+// --- NAVEGACIÓN ---
 btnNext.onclick = () => {
     stepContact.style.display = "none";
     stepCampaign.style.display = "block";
@@ -78,10 +82,7 @@ btnBack.onclick = () => {
     stepCampaign.style.display = "none";
 };
 
-// ==============================
-// 4. LLAMADAS API (GENESYS)
-// ==============================
-
+// --- GENESYS API ---
 async function loadContactLists(selectedId = "") {
     contactSelect.innerHTML = "<option>Cargando...</option>";
     try {
@@ -96,9 +97,7 @@ async function loadContactLists(selectedId = "") {
             contactSelect.add(opt);
         });
 
-        if (selectedId) {
-            contactSelect.value = selectedId;
-        }
+        if (selectedId) contactSelect.value = selectedId;
         btnNext.disabled = !contactSelect.value;
     } catch (err) {
         createStatus.textContent = "Error al cargar listas.";
@@ -125,18 +124,16 @@ async function createContactList() {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error API");
+        if (!res.ok) throw new Error(data.message || "Error al crear lista");
 
         createStatus.textContent = "¡Lista creada!";
-        await loadContactLists(data.id); // Recarga y selecciona la nueva
         
-        // Resetear formulario de nueva lista
+        // Importante: Desmarcamos el check y volvemos a modo normal
         chkNewList.checked = false;
-        inputNewList.value = "";
         inputNewList.disabled = true;
-        btnCreateList.disabled = true;
         contactSelect.disabled = false;
         
+        await loadContactLists(data.id); // Recarga y selecciona la nueva lista
     } catch (err) {
         createStatus.textContent = "Error: " + err.message;
     }
@@ -149,7 +146,6 @@ async function loadCampaigns() {
             headers: { "Authorization": `Bearer ${INTERNAL_TOKEN}` }
         });
         const data = await res.json();
-        
         campaignSelect.innerHTML = '<option value="">-- Seleccione una campaña --</option>';
         (data.entities || []).forEach(camp => {
             campaignSelect.add(new Option(camp.name, camp.id));
@@ -159,28 +155,17 @@ async function loadCampaigns() {
     }
 }
 
-// ==============================
-// 5. POSTMONGER (SFMC)
-// ==============================
-
-connection.on('initActivity', (data) => {
-    if (data) payload = data;
-});
+// --- SFMC ---
+connection.on('initActivity', (data) => { if (data) payload = data; });
 
 connection.on('clickedNext', () => {
-    if (stepCampaign.style.display !== "none") {
-        save();
-    } else {
-        connection.trigger('ready');
-    }
+    if (stepCampaign.style.display !== "none") save();
+    else connection.trigger('ready');
 });
 
 function save() {
-    const listId = contactSelect.value;
-    const campId = campaignSelect.value;
-
-    if (!campId) {
-        alert("Por favor seleccione una campaña");
+    if (!campaignSelect.value) {
+        alert("Seleccione una campaña");
         connection.trigger('ready');
         return;
     }
@@ -190,8 +175,8 @@ function save() {
         "contact_key": "{{Contact.Key}}",
         "msisdn": "{{Event." + payload.metaData.eventDefinitionKey + ".msisdn}}",
         "status": "ready",
-        "genesysListId": listId,
-        "genesysCampaignId": campId
+        "genesysListId": contactSelect.value,
+        "genesysCampaignId": campaignSelect.value
     }];
 
     payload['metaData'].isConfigured = true;
