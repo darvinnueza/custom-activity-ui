@@ -5,13 +5,9 @@ let payload = {};
 let DIVISION_ID;
 let INTERNAL_TOKEN;
 
-let stepContact, stepCampaign;
-let selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus;
-let campaignSelect;
+// Elementos de la interfaz
+let stepContact, stepCampaign, selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus, campaignSelect;
 
-// ==============================
-// INIT
-// ==============================
 async function initEnv() {
     stepContact = document.getElementById("stepContact");
     stepCampaign = document.getElementById("stepCampaign");
@@ -23,33 +19,27 @@ async function initEnv() {
     campaignSelect = document.getElementById("campaignSelect");
 
     // --- LÓGICA DE CONTROL ---
-
-    // 1. Al cambiar el Checkbox
-    chkNewList.addEventListener("change", () => {
-        const isChecked = chkNewList.checked;
-        selectContactLists.disabled = isChecked;
-        inputNewList.disabled = !isChecked;
-        
-        // Evaluar botón crear inmediatamente
+    
+    // Función simple para habilitar el botón
+    const refrescarBoton = () => {
         const tieneTexto = inputNewList.value.trim().length > 0;
-        btnCreateList.disabled = !isChecked || !tieneTexto;
-        
-        if (isChecked) inputNewList.focus();
-    });
-
-    // 2. Al escribir (ESTO es lo que te estaba bloqueando)
-    inputNewList.addEventListener("input", () => {
-        const tieneTexto = inputNewList.value.trim().length > 0;
-        // Habilitar solo si el check está activo Y hay texto
-        btnCreateList.disabled = !chkNewList.checked || !tieneTexto;
-    });
-
-    // 3. Click en Crear
-    btnCreateList.onclick = function() {
-        createContactList();
+        // Solo habilitar si el check está marcado Y hay texto escrito
+        btnCreateList.disabled = !(chkNewList.checked && tieneTexto);
     };
 
-    // --- CARGA DE DATOS ---
+    chkNewList.addEventListener("change", () => {
+        selectContactLists.disabled = chkNewList.checked;
+        inputNewList.disabled = !chkNewList.checked;
+        if (chkNewList.checked) inputNewList.focus();
+        refrescarBoton();
+    });
+
+    inputNewList.addEventListener("input", refrescarBoton);
+
+    // Asignar el clic directamente
+    btnCreateList.onclick = createContactList;
+
+    // Cargar credenciales
     try {
         const res = await fetch("/api/env");
         const env = await res.json();
@@ -64,17 +54,18 @@ async function initEnv() {
 }
 
 // ==============================
-// API GENESYS
+// CREACIÓN (Con tu ruta exacta)
 // ==============================
 async function createContactList() {
     const name = inputNewList.value.trim();
     if (!name) return;
 
-    setStatus("Creando lista...", "");
+    createStatus.textContent = "Creando lista...";
+    createStatus.style.color = "blue";
     btnCreateList.disabled = true; 
 
     try {
-        // Usando la ruta exacta del swagger
+        // USANDO LA RUTA QUE TÚ DICES: /create
         const res = await fetch(`/api/genesys/contactlists/create`, {
             method: "POST",
             headers: {
@@ -90,42 +81,43 @@ async function createContactList() {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error al crear");
+        if (!res.ok) throw new Error(data.message || "Error en el servidor");
 
-        setStatus("¡Lista creada!", "ok");
+        createStatus.textContent = "¡Lista creada correctamente!";
+        createStatus.style.color = "green";
         
-        // Reset de UI
+        // Reset de UI para volver a modo selección
         chkNewList.checked = false;
         inputNewList.value = "";
         inputNewList.disabled = true;
         selectContactLists.disabled = false;
         
+        // Recargar el dropdown y seleccionar la nueva lista automáticamente
         await loadContactLists(data.id);
+
     } catch (err) {
-        setStatus(err.message, "err");
+        createStatus.textContent = "Error: " + err.message;
+        createStatus.style.color = "red";
         btnCreateList.disabled = false;
     }
 }
 
-// ... (Resto de tus funciones loadContactLists, loadCampaigns y save igual que antes)
-
 async function loadContactLists(selectIdToSet = "") {
     try {
-        const res = await fetch(`/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`, {
+        const res = await fetch(`/api/genesys/contactlists?divisionId=${DIVISION_ID}`, {
             headers: { "Authorization": `Bearer ${INTERNAL_TOKEN}` }
         });
         const data = await res.json();
-        selectContactLists.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
+        
+        selectContactLists.innerHTML = '<option value="">-- Seleccione una lista --</option>';
         (data.entities || []).forEach(item => {
             selectContactLists.add(new Option(item.name, item.id));
         });
-        if (selectIdToSet) selectContactLists.value = selectIdToSet;
-    } catch (err) { setStatus("Error cargando listas", "err"); }
-}
 
-function setStatus(msg, type) {
-    createStatus.textContent = msg;
-    createStatus.style.color = type === "err" ? "red" : "green";
+        if (selectIdToSet) selectContactLists.value = selectIdToSet;
+    } catch (err) {
+        console.error("Error cargando listas");
+    }
 }
 
 document.addEventListener("DOMContentLoaded", initEnv);
