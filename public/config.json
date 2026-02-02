@@ -7,8 +7,8 @@
     "type": "REST",
     "lang": {
         "en-US": {
-        "name": "Test Activity",
-        "description": "Test Activity"
+        "name": "Custom Activity Demo",
+        "description": "Custom Activity Demo"
         }
     },
     "arguments": {
