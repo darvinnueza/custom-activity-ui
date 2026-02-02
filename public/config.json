@@ -25,7 +25,7 @@
         }
     },
     "configurationArguments": {
-        "applicationExtensionKey": "3f83679c-0fde-47c8-a17f-f7215f199a78",
+        "applicationExtensionKey": "2b47eb44-a0fe-4c58-9c09-4c5dc6d3841e",
         "save": { "url": "https://custom-activity-service.vercel.app/api/sfmc/save", "useJwt": true },
         "publish": { "url": "https://custom-activity-service.vercel.app/api/sfmc/publish", "useJwt": true },
         "validate": { "url": "https://custom-activity-service.vercel.app/api/sfmc/validate", "useJwt": true },
