@@ -7,8 +7,8 @@
     "type": "REST",
     "lang": {
         "en-US": {
-            "name": "Custom Activity Demo",
-            "description": "Custom Activity Demo"
+            "name": "Custom Activity Journey Builder",
+            "description": "Custom Activity Journey Builder"
         }
     },
     "arguments": {
