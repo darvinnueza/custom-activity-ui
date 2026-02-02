@@ -22,39 +22,40 @@
           { "updated_at": "{{Event.updated_at}}" }
         ],
         "outArguments": [],
-        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
+        "url": "https://custom-activity-ui-ruby.vercel.app/api/sfmc/execute",
         "useJwt": true
     }
   },
   "configurationArguments": {
     "applicationExtensionKey": "366758bd-3a42-493d-af36-723b782bcfde",
     "save": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
+      "url": "https://custom-activity-ui-ruby.vercel.app/api/sfmc/save",
       "useJwt": true
     },
     "publish": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
+      "url": "https://custom-activity-ui-ruby.vercel.app/api/sfmc/publish",
       "useJwt": true
     },
     "validate": {
-      "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
+      "url": "https://custom-activity-ui-ruby.vercel.app/api/sfmc/validate",
       "useJwt": true
     },
     "stop": {
-      "url": "https://custom-activity-service.vercel.app/stop",
+      "url": "https://custom-activity-ui-ruby.vercel.app/api/sfmc/stop",
       "useJwt": true
     }
   },
   "userInterfaces": {
     "configModal": {
-      "url": "https://custom-activity-service.vercel.app/",
+      "url": "https://custom-activity-ui-ruby.vercel.app/",
       "height": 600,
       "width": 800,
-      "fullscreen": false
+      "fullscreen": false,
+      "useJwt": true
     }
   },
   "edit": {
-    "url": "https://custom-activity-service.vercel.app/",
+    "url": "https://custom-activity-ui-ruby.vercel.app/",
     "height": 600,
     "width": 800,
     "useJwt": true
