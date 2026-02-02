@@ -1,32 +1,89 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>VoiceBot - Custom Activity</title>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 16px; }
-            .row { margin: 10px 0; }
-            .btn { padding: 10px 14px; cursor: pointer; }
-            .ok { color: #1a7f37; }
-            .err { color: #b42318; }
-        </style>
-    </head>
-    <body>
-        <h2>VoiceBot - Custom Activity</h2>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Custom Activity UI — VoiceBot</title>
 
-        <div class="row">
-            <label>Nombre visible (ejemplo):</label><br/>
-            <input id="name" style="width: 360px; padding:8px;" placeholder="VoiceBot - Campaign Selector" />
-        </div>
+    <!-- ESTILOS -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-        <div class="row">
-            <button id="btnSave" class="btn">Guardar</button>
-            <span id="status" style="margin-left:12px;"></span>
-        </div>
+  <body>
+    <div class="app-header">Custom Activity UI — VoiceBot</div>
 
-        <!-- Postmonger (SFMC) -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/postmonger/0.0.14/postmonger.js"></script>
-        <script src="./customActivity.js"></script>
-    </body>
+    <div class="container">
+      <div class="card">
+
+        <!-- ===================== -->
+        <!-- STEP 1: CONTACT LISTS -->
+        <!-- ===================== -->
+        <section id="stepContact">
+          <h2>Configuración de Lista de Contactos</h2>
+          <p class="subtitle">
+            Elige una lista de contactos existente o define una nueva para esta actividad de VoiceBot.
+          </p>
+
+          <label for="contactListSelect">Lista de Contactos Existente</label>
+          <select id="contactListSelect">
+            <option>Cargando...</option>
+          </select>
+
+          <div class="checkbox">
+            <input type="checkbox" id="newListCheck" />
+            <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
+          </div>
+
+          <label for="newListName">Nombre de la Nueva Lista</label>
+
+          <!-- ✅ Input + Botón en una misma fila -->
+          <div class="inline-create">
+            <input
+              id="newListName"
+              type="text"
+              placeholder="Ingrese el nombre..."
+            />
+
+            <button id="btnCreateList" type="button" disabled>Crear Lista</button>
+          </div>
+
+          <!-- ✅ HINT (debajo del input+botón) -->
+          <p class="hint">Si activa esta opción, se ignorará la lista existente seleccionada.</p>
+
+          <!-- ✅ Estado -->
+          <small id="createStatus" class="status"></small>
+
+          <!-- ✅ Navegación -->
+          <div class="nav">
+            <button id="btnNext" type="button" disabled>Siguiente</button>
+          </div>
+        </section>
+
+        <!-- ===================== -->
+        <!-- STEP 2: CAMPAIGN      -->
+        <!-- ===================== -->
+        <section id="stepCampaign" style="display:none;">
+          <h2>Configuración de Campaña</h2>
+          <p class="subtitle">
+            Elige una campaña existente o define una nueva para esta actividad de VoiceBot.
+          </p>
+
+          <label for="campaignSelect">Campaña Existente</label>
+          <select id="campaignSelect">
+            <option value="">Cargando...</option>
+          </select>
+
+          <!-- ✅ Navegación -->
+          <div class="nav">
+            <button id="btnBack" type="button">Atrás</button>
+          </div>
+        </section>
+
+        <!-- Postmonger + bridge -->
+        <script src="js/postmonger.js"></script>
+        <script src="js/customActivity.js"></script>
+        <script src="js/ui.js"></script>
+      </div>
+    </div>
+  </body>
 </html>
