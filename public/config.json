@@ -7,15 +7,20 @@
     "type": "REST",
     "lang": {
         "en-US": {
-            "name": "Test Activity",
-            "description": "Test Activity"
+        "name": "Test Activity",
+        "description": "Test Activity"
         }
     },
     "arguments": {
         "execute": {
-            "url": "https://custom-activity-service.vercel.app/api/execute",
-            "inArguments": [],
-            "outArguments": []
+        "url": "https://custom-activity-service.vercel.app/api/execute",
+        "inArguments": [
+            { "request_id": "{{Event.request_id}}" },
+            { "contact_key": "{{Event.contact_key}}" },
+            { "msisdn": "{{Event.msisdn}}" },
+            { "status": "{{Event.status}}" }
+        ],
+        "outArguments": []
         }
     },
     "configurationArguments": {
@@ -23,9 +28,9 @@
     },
     "userInterfaces": {
         "configModal": {
-            "height": 600,
-            "width": 800,
-            "url": "https://custom-activity-ui-tau.vercel.app/"
+        "height": 600,
+        "width": 800,
+        "url": "https://custom-activity-ui-tau.vercel.app/"
         }
     }
 }
