@@ -1,3 +1,8 @@
+/* global Postmonger */
+
+// ==============================
+// POSTMONGER CONFIG
+// ==============================
 const connection = new Postmonger.Session();
 let payload = {};
 let DIVISION_ID;
@@ -9,6 +14,98 @@ let INTERNAL_TOKEN;
 let stepContact, stepCampaign;
 let selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus;
 let campaignSelect;
+
+// ==============================
+// 1. INITIALIZATION (Postmonger)
+// ==============================
+connection.on('initActivity', function (data) {
+    if (data) {
+        payload = data;
+    }
+    
+    // Si ya había configuración previa (ej. al re-editar la actividad)
+    const hasInArguments = !!(
+        payload['arguments'] &&
+        payload['arguments'].execute &&
+        payload['arguments'].execute.inArguments &&
+        payload['arguments'].execute.inArguments.length > 0
+    );
+
+    const inArguments = hasInArguments ? payload['arguments'].execute.inArguments : {};
+
+    // Aquí podrías pre-cargar valores si existen en inArguments[0]
+    console.log("Payload inicial de SFMC:", payload);
+});
+
+// Escuchar el clic en el botón "Siguiente" de la interfaz de Salesforce
+connection.on('clickedNext', function () {
+    if (stepContact.style.display !== 'none') {
+        // Si estamos en el paso 1, intentamos pasar al 2
+        const selectedListId = selectContactLists?.value || "";
+        if (selectedListId) {
+            goToCampaignStep();
+            connection.trigger('ready'); 
+        } else {
+            setStatus("Seleccione o cree una lista antes de continuar.", "err");
+            connection.trigger('ready');
+        }
+    } else {
+        // Si ya estamos en el paso de campaña, guardamos todo
+        save();
+    }
+});
+
+// ==============================
+// 2. SAVE LOGIC
+// ==============================
+function save() {
+    const selectedListId = selectContactLists.value;
+    const selectedCampaignId = campaignSelect.value;
+
+    if (!selectedCampaignId) {
+        setStatus("Seleccione una campaña para finalizar.", "err");
+        connection.trigger('ready');
+        return;
+    }
+
+    // Mapeo de datos para el config.json
+    payload['arguments'].execute.inArguments = [{
+        "request_id": "{{Event.request_id}}",
+        "contact_key": "{{Event.contact_key}}",
+        "msisdn": "{{Event.msisdn}}",
+        "status": "{{Event.status}}",
+        "genesysListId": selectedListId,
+        "genesysCampaignId": selectedCampaignId
+    }];
+
+    payload['metaData'].isConfigured = true;
+
+    console.log("Guardando configuración final:", payload);
+    connection.trigger('updateActivity', payload);
+}
+
+// ==============================
+// 3. UI HELPERS & API (Tu lógica original adaptada)
+// ==============================
+
+function setStatus(msg, type) {
+    if (!createStatus) return;
+    createStatus.textContent = msg || "";
+    createStatus.className = "status-message " + (type || "");
+}
+
+function showStep(step) {
+    stepContact.style.display = step === "contact" ? "block" : "none";
+    stepCampaign.style.display = step === "campaign" ? "block" : "none";
+}
+
+function setNewListMode(enabled) {
+    if (!chkNewList) return;
+    selectContactLists.disabled = enabled;
+    inputNewList.disabled = !enabled;
+    btnCreateList.disabled = !enabled || inputNewList.value.trim().length === 0;
+    if (enabled) inputNewList.focus();
+}
 
 async function loadContactLists(selectIdToSet = "") {
     selectContactLists.innerHTML = "<option>Cargando...</option>";
@@ -64,30 +161,26 @@ async function createContactList() {
     }
 }
 
-// Escuchar el clic en el botón "Siguiente" de la interfaz de Salesforce
-connection.on('clickedNext', function () {
-    if (stepContact.style.display !== 'none') {
-        // Si estamos en el paso 1, intentamos pasar al 2
-        const selectedListId = selectContactLists?.value || "";
-        if (selectedListId) {
-            goToCampaignStep();
-            connection.trigger('ready'); 
-        } else {
-            setStatus("Seleccione o cree una lista antes de continuar.", "err");
-            connection.trigger('ready');
-        }
-    } else {
-        // Si ya estamos en el paso de campaña, guardamos todo
-        save();
+async function loadCampaigns() {
+    campaignSelect.innerHTML = "<option>Cargando campañas...</option>";
+    try {
+        const res = await fetch(`/api/genesys/campaigns?divisionId=${encodeURIComponent(DIVISION_ID)}`, {
+            headers: { "Authorization": `Bearer ${INTERNAL_TOKEN}` }
+        });
+        const data = await res.json();
+        campaignSelect.innerHTML = `<option value="">-- Seleccione una campaña --</option>`;
+        (data.entities || []).forEach(c => {
+            campaignSelect.add(new Option(c.name, c.id));
+        });
+        campaignSelect.disabled = false;
+    } catch (err) {
+        setStatus("Error cargando campañas", "err");
     }
-});
+}
 
-function setNewListMode(enabled) {
-    if (!chkNewList) return;
-    selectContactLists.disabled = enabled;
-    inputNewList.disabled = !enabled;
-    btnCreateList.disabled = !enabled || inputNewList.value.trim().length === 0;
-    if (enabled) inputNewList.focus();
+function goToCampaignStep() {
+    showStep("campaign");
+    loadCampaigns();
 }
 
 // ==============================
