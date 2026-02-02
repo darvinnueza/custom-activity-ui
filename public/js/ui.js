@@ -4,22 +4,43 @@ const connection = new Postmonger.Session();
 let payload = {};
 let DIVISION_ID;
 let INTERNAL_TOKEN;
-let AUTH_TOKEN_JWT; // <--- Nueva variable para guardar el token de Salesforce
+let AUTH_TOKEN_JWT; 
 
-// --- FUNCIÓN DE SEGURIDAD (Añadida al inicio) ---
-connection.on('initActivity', function (data) {
+// --- 1. VALIDACIÓN DE JWT EN CARGA (Lo que pidió Salesforce) ---
+connection.on('initActivity', async function (data) {
     if (data) {
         payload = data;
     }
-    // Si activaste useJwt: true, Salesforce envía el token aquí
+    
+    // Guardamos el token que viene de Salesforce
     AUTH_TOKEN_JWT = data.jwt; 
-    console.log("Token JWT de Salesforce recibido");
+
+    if (AUTH_TOKEN_JWT) {
+        try {
+            // Enviamos el JWT a tu API para validar contra el Secreto
+            const verify = await fetch('/api/auth/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: AUTH_TOKEN_JWT })
+            });
+
+            if (verify.ok) {
+                // Si el servidor dice que el JWT es real, mostramos el HTML
+                document.body.style.display = "block";
+                console.log("Acceso autorizado por Salesforce JWT");
+            } else {
+                throw new Error("JWT Inválido");
+            }
+        } catch (err) {
+            document.documentElement.innerHTML = "<h1 style='color:red; text-align:center; margin-top:50px;'>403 - Error de Autenticación Salesforce</h1>";
+            console.error("Fallo de validación JWT:", err);
+        }
+    }
 });
 
 let stepContact, stepCampaign, selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus, campaignSelect;
 
 async function initEnv() {
-    // ... (Tu código actual de vinculación de elementos se mantiene igual)
     stepContact = document.getElementById("stepContact");
     stepCampaign = document.getElementById("stepCampaign");
     selectContactLists = document.getElementById("contactListSelect");
@@ -29,18 +50,12 @@ async function initEnv() {
     createStatus = document.getElementById("createStatus");
     campaignSelect = document.getElementById("campaignSelect");
 
-    // --- ESTADO INICIAL ---
     inputNewList.disabled = true;
     btnCreateList.disabled = true;
 
-    // ... (Tus funciones validarBotonSiguiente y refrescarInterfaz se mantienen igual)
     const validarBotonSiguiente = () => {
         const hayListaSeleccionada = selectContactLists.value !== "";
-        if (hayListaSeleccionada) {
-            connection.trigger('updateButton', { button: 'next', enabled: true });
-        } else {
-            connection.trigger('updateButton', { button: 'next', enabled: false });
-        }
+        connection.trigger('updateButton', { button: 'next', enabled: hayListaSeleccionada });
     };
 
     const refrescarInterfaz = () => {
@@ -71,7 +86,6 @@ async function initEnv() {
     }
 }
 
-// --- CAMBIO CLAVE EN LAS PETICIONES FETCH ---
 async function createContactList() {
     const name = inputNewList.value.trim();
     if (!name) return;
@@ -84,7 +98,7 @@ async function createContactList() {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${INTERNAL_TOKEN}`,
-                "X-SFMC-JWT": AUTH_TOKEN_JWT, // <--- Enviamos el token al servidor para que valide
+                "X-SFMC-JWT": AUTH_TOKEN_JWT, 
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -113,13 +127,12 @@ async function createContactList() {
     }
 }
 
-// ... (El resto de loadContactLists se mantiene igual)
 async function loadContactLists(selectIdToSet = "") {
     try {
         const res = await fetch(`/api/genesys/contactlists?divisionId=${DIVISION_ID}`, {
             headers: { 
                 "Authorization": `Bearer ${INTERNAL_TOKEN}`,
-                "X-SFMC-JWT": AUTH_TOKEN_JWT // <--- También aquí para proteger la carga
+                "X-SFMC-JWT": AUTH_TOKEN_JWT 
             }
         });
         const data = await res.json();
@@ -128,7 +141,9 @@ async function loadContactLists(selectIdToSet = "") {
             selectContactLists.add(new Option(item.name, item.id));
         });
         if (selectIdToSet) selectContactLists.value = selectIdToSet;
-    } catch (e) { console.error("Error cargando listas"); }
+    } catch (e) { 
+        console.error("Error cargando listas"); 
+    }
 }
 
 document.addEventListener("DOMContentLoaded", initEnv);
