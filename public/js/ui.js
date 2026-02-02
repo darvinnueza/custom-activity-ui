@@ -41,7 +41,7 @@ async function initEnv() {
 
     // Listeners de UI
     chkNewList.addEventListener("change", () => setNewListMode(chkNewList.checked));
-    btnCreateList.addEventListener("click", createContactList);
+    //btnCreateList.addEventListener("click", createContactList);
     inputNewList.addEventListener("input", () => {
         btnCreateList.disabled = inputNewList.value.trim().length === 0;
     });
