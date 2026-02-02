@@ -51,7 +51,7 @@
       "height": 600,
       "width": 800,
       "fullscreen": false,
-      "useJwt": true
+      "useJwt": false
     }
   }
 }
