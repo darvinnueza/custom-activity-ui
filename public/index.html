@@ -58,8 +58,8 @@
       (function() {
         // Verificamos si la página está en un iFrame de Salesforce
         const esIframe = window.self !== window.top;
-        const vieneDeSFMC = document.referrer.includes("s.com") || 
-                            document.referrer.includes("s.com");
+        const vieneDeSFMC = document.referrer.includes("google.com") || 
+                            document.referrer.includes("marketingcloudapps.com");
 
         if (!esIframe || !vieneDeSFMC) {
           // Si entran por la URL directa, borramos el body y mostramos error
