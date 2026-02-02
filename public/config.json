@@ -50,8 +50,13 @@
       "url": "https://custom-activity-service.vercel.app/",
       "height": 600,
       "width": 800,
-      "fullscreen": false,
-      "useJwt": true
+      "fullscreen": false
     }
+  },
+  "edit": {
+    "url": "https://custom-activity-service.vercel.app/",
+    "height": 600,
+    "width": 800,
+    "useJwt": true
   }
 }
