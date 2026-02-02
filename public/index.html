@@ -5,36 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Custom Activity UI — VoiceBot</title>
 
-    <!-- BLOQUEO: si abren directo (top window), mostrar 403 SIEMPRE -->
-    <script>
-      (function () {
-        const esIframe = window.self !== window.top;
-        if (!esIframe) {
-          document.open();
-          document.write(`
-            <!doctype html>
-            <html lang="es">
-              <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>403 - Acceso Denegado</title>
-              </head>
-              <body style="font-family:sans-serif;text-align:center;padding-top:70px;">
-                <h1 style="color:#c00;margin-bottom:10px;">403 - Acceso Denegado</h1>
-                <p style="font-size:16px;color:#333;">
-                  Esta aplicación solo es accesible desde Salesforce Marketing Cloud (Journey Builder).
-                </p>
-              </body>
-            </html>
-          `);
-          document.close();
-        }
-      })();
-    </script>
-
     <style>
-      /* Oculto por defecto; ui.js decide cuándo mostrar dentro de Journey Builder */
-      body { display: none; }
+      /* Mantiene el formulario oculto por defecto para seguridad */
+      body { display: none; } 
     </style>
 
     <link rel="stylesheet" href="styles.css" />
@@ -48,7 +21,7 @@
         <section id="stepContact">
           <h2>Configuración de Lista de Contactos</h2>
           <p class="subtitle">Elige una lista de contactos existente o define una nueva.</p>
-
+          
           <label for="contactListSelect">Lista de Contactos Existente</label>
           <select id="contactListSelect"><option>Cargando...</option></select>
 
@@ -81,13 +54,27 @@
 
     <script src="js/postmonger.js"></script>
     <script src="js/customActivity.js"></script>
-    <script src="js/ui.js"></script>
+    
+    <script>
+      (function() {
+        // Validación básica de iFrame (Punto 3 de Salesforce)
+        const esIframe = window.self !== window.top;
+        const vieneDeSFMC = document.referrer.includes("exacttarget.com") || 
+                            document.referrer.includes("marketingcloudapps.com");
 
-    <noscript>
-      <div style="font-family:sans-serif;text-align:center;padding-top:70px;">
-        <h1 style="color:#c00;">403 - Acceso Denegado</h1>
-        <p>Esta aplicación requiere JavaScript y solo se usa dentro de Salesforce Marketing Cloud.</p>
-      </div>
-    </noscript>
+        if (!esIframe || !vieneDeSFMC) {
+          document.documentElement.innerHTML = `
+            <body style="font-family:sans-serif; text-align:center; padding-top:50px;">
+              <h1 style="color:red;">403 - Acceso Denegado</h1>
+              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud.</p>
+            </body>`;
+          throw new Error("Acceso no autorizado");
+        }
+        // NOTA: No hacemos "display: block" aquí. 
+        // Lo hará el ui.js después de validar el JWT con el servidor.
+      })();
+    </script>
+
+    <script src="js/ui.js"></script>
   </body>
 </html>
