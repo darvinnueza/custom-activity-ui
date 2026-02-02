@@ -24,3 +24,42 @@ async function loadContactLists(selectIdToSet = "") {
         setStatus("Error cargando listas de Genesys", "err");
     }
 }
+
+// ==============================
+// INIT
+// ==============================
+async function initEnv() {
+    // Vincular elementos del DOM
+    stepContact = document.getElementById("stepContact");
+    stepCampaign = document.getElementById("stepCampaign");
+    selectContactLists = document.getElementById("contactListSelect");
+    chkNewList = document.getElementById("newListCheck");
+    inputNewList = document.getElementById("newListName");
+    btnCreateList = document.getElementById("btnCreateList");
+    createStatus = document.getElementById("createStatus");
+    campaignSelect = document.getElementById("campaignSelect");
+
+    // Listeners de UI
+    chkNewList.addEventListener("change", () => setNewListMode(chkNewList.checked));
+    btnCreateList.addEventListener("click", createContactList);
+    inputNewList.addEventListener("input", () => {
+        btnCreateList.disabled = inputNewList.value.trim().length === 0;
+    });
+
+    // Obtener variables de entorno
+    try {
+        const res = await fetch("/api/env");
+        const env = await res.json();
+        DIVISION_ID = env.DIVISION_ID;
+        INTERNAL_TOKEN = env.INTERNAL_TOKEN;
+        
+        await loadContactLists();
+        
+        // AVISAR A SALESFORCE QUE LA UI ESTÁ LISTA
+        connection.trigger('ready');
+    } catch (err) {
+        console.error("Error de inicialización:", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", initEnv);
