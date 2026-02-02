@@ -22,7 +22,7 @@
         // ✅ CLAVE: marca la actividad como configurada
         payload.metaData.isConfigured = true;
 
-        // ✅ Envía campos de tu Data Extension hacia /api/execute
+        // ✅ Envía campos de tu Data Extension hacia /sfmc/execute
         payload.arguments.execute.inArguments = [
             { request_id: "{{Event.request_id}}" },
             { contact_key: "{{Event.contact_key}}" },

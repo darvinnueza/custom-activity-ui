@@ -13,7 +13,7 @@
     },
     "arguments": {
         "execute": {
-        "url": "https://custom-activity-service.vercel.app/sfmc/execute",
+        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
         "inArguments": [
             { "request_id": "{{Event.request_id}}" },
             { "contact_key": "{{Event.contact_key}}" },
