@@ -1,15 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Custom Activity</title>
+    <meta charset="UTF-8">
+    <title>Custom Activity Genesys</title>
+    <link rel="stylesheet" href="https://unpkg.com/@salesforce-ux/design-system/assets/styles/salesforce-lightning-design-system.min.css">
+    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="js/postmonger.js"></script>
     <script src="js/customActivity.js"></script>
 </head>
-<body>
-    <div id="step1">
-        <h1>¡Conexión Exitosa!</h1>
-        <p>Si ves esto, la Custom Activity está funcionando.</p>
+<body style="padding: 20px;">
+    <div class="slds-box slds-theme_default">
+        <h1 class="slds-text-heading_large">¡Conexión Exitosa!</h1>
+        <p class="slds-m-top_medium">La infraestructura está lista para Genesys.</p>
+        <div id="status" class="slds-badge slds-theme_success slds-m-top_small">Esperando interacción de SFMC...</div>
     </div>
 </body>
 </html>
