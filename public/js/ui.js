@@ -25,6 +25,38 @@ async function loadContactLists(selectIdToSet = "") {
     }
 }
 
+async function createContactList() {
+    const name = inputNewList.value.trim();
+    if (!name) return;
+
+    setStatus("Creando lista en Genesys...", "");
+    try {
+        const res = await fetch(`/api/genesys/contactlists/create`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${INTERNAL_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name,
+                columnNames: ["request_id", "contact_key", "msisdn", "status"],
+                phoneColumns: [{ columnName: "msisdn", type: "cell" }],
+                division: { id: DIVISION_ID }
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Error API");
+
+        setStatus("¡Lista creada!", "ok");
+        await loadContactLists(data.id);
+        setNewListMode(false);
+        chkNewList.checked = false;
+    } catch (err) {
+        setStatus(err.message, "err");
+    }
+}
+
 // ==============================
 // INIT
 // ==============================
@@ -41,7 +73,7 @@ async function initEnv() {
 
     // Listeners de UI
     chkNewList.addEventListener("change", () => setNewListMode(chkNewList.checked));
-    //btnCreateList.addEventListener("click", createContactList);
+    btnCreateList.addEventListener("click", createContactList);
     inputNewList.addEventListener("input", () => {
         btnCreateList.disabled = inputNewList.value.trim().length === 0;
     });
