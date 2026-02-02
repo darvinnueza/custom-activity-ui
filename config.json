@@ -1,14 +1,14 @@
 {
     "workflowApiVersion": "1.1",
     "metaData": {
-        "icon": "images/icon40.png",
+        "icon": "icon40.png",
         "category": "custom"
     },
     "type": "REST",
     "lang": {
         "en-US": {
-            "name": "Custom Activity Journey Builder",
-            "description": "Custom Activity Journey Builder"
+            "name": "VoiceBot V2",
+            "description": "Configuración limpia de actividad"
         }
     },
     "arguments": {
@@ -25,7 +25,7 @@
         }
     },
     "configurationArguments": {
-        "applicationExtensionKey": "2b47eb44-a0fe-4c58-9c09-4c5dc6d3841e",
+        "applicationExtensionKey": "f559f131-e748-4fc5-81a8-6a8e8a75db3c",
         "save": { "url": "https://custom-activity-service.vercel.app/api/sfmc/save", "useJwt": true },
         "publish": { "url": "https://custom-activity-service.vercel.app/api/sfmc/publish", "useJwt": true },
         "validate": { "url": "https://custom-activity-service.vercel.app/api/sfmc/validate", "useJwt": true },
