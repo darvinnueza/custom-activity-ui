@@ -2,18 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Custom Activity Demo</title>
+    <title>VoiceBot Custom Activity</title>
     <link rel="stylesheet" href="https://unpkg.com/@salesforce-ux/design-system/assets/styles/salesforce-lightning-design-system.min.css">
     <style>
-        body { padding: 20px; background-color: #fff; }
-        .setup-step { display: none; }
-        .active { display: block; }
+        /* Oculto por defecto para evitar que se vea si falla la seguridad */
+        body { display: none; padding: 20px; background-color: #fff; }
+        .error-msg { color: #c23934; font-weight: bold; text-align: center; margin-top: 50px; }
     </style>
 </head>
 <body>
 
     <div id="step1" class="setup-step active">
-        <h2 class="slds-text-heading_medium">Configuración de la Actividad</h2>
+        <h2 class="slds-text-heading_medium">Configuración de VoiceBot</h2>
         <div class="slds-form-element slds-m-top_medium">
             <label class="slds-form-element__label" for="message-input">Mensaje para el contacto:</label>
             <div class="slds-form-element__control">
@@ -24,5 +24,20 @@
 
     <script src="js/postmonger.js"></script>
     <script src="js/customActivity.js"></script>
+
+    <script>
+        (function() {
+            // 1. Verificación de Iframe (CSP compatible)
+            if (window.self === window.top) {
+                document.documentElement.innerHTML = '<div class="error-msg"><h1>403 - Acceso Denegado</h1><p>Esta interfaz solo es accesible desde Salesforce Marketing Cloud.</p></div>';
+                return;
+            }
+
+            // 2. Lógica para JWT
+            // Al cargar, Marketing Cloud puede pasar el JWT en la URL o vía POST.
+            // Aquí mostramos el body si estamos en el frame correcto.
+            document.body.style.display = "block";
+        })();
+    </script>
 </body>
 </html>
