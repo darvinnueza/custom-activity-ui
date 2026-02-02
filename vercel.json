@@ -1,0 +1,17 @@
+{
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "Content-Security-Policy",
+                    "value": "frame-ancestors 'self' *.exacttarget.com *.marketingcloudapps.com *.salesforce.com;"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "ALLOW-FROM https://mc.s11.exacttarget.com"
+                }
+            ]
+        }
+    ]
+}
