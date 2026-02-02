@@ -1,20 +1,38 @@
 {
     "workflowApiVersion": "1.1",
     "metaData": {
-        "icon": "https://custom-activity-ui-two.vercel.app/images/icon.png",
+        "icon": "images/icon40.png",
         "category": "message"
     },
+    "name": "VoiceBot Custom Activity",
+    "description": "Actividad personalizada para ejecución de VoiceBot",
     "arguments": {
         "execute": {
+            "inArguments": [
+                {
+                    "message": ""
+                }
+            ],
+            "outArguments": [],
             "url": "https://custom-activity-ui-two.vercel.app/api/execute",
-            "inArguments": [],
-            "outArguments": []
+            "timeout": 60000,
+            "retryCount": 3
         }
     },
     "configurationArguments": {
         "save": { "url": "https://custom-activity-ui-two.vercel.app/api/save" },
-        "validate": { "url": "https://custom-activity-ui-two.vercel.app/api/validate" },
         "publish": { "url": "https://custom-activity-ui-two.vercel.app/api/publish" },
+        "validate": { "url": "https://custom-activity-ui-two.vercel.app/api/validate" },
         "stop": { "url": "https://custom-activity-ui-two.vercel.app/api/stop" }
+    },
+    "wizardSteps": [
+        { "label": "Configurar VoiceBot", "key": "step1" }
+    ],
+    "userInterfaces": {
+        "configModal": {
+            "height": 450,
+            "width": 600,
+            "fullscreen": false
+        }
     }
 }
