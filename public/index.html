@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>VoiceBot - Custom Activity</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 16px; }
+            .row { margin: 10px 0; }
+            .btn { padding: 10px 14px; cursor: pointer; }
+            .ok { color: #1a7f37; }
+            .err { color: #b42318; }
+        </style>
+    </head>
+    <body>
+        <h2>VoiceBot - Custom Activity</h2>
+
+        <div class="row">
+            <label>Nombre visible (ejemplo):</label><br/>
+            <input id="name" style="width: 360px; padding:8px;" placeholder="VoiceBot - Campaign Selector" />
+        </div>
+
+        <div class="row">
+            <button id="btnSave" class="btn">Guardar</button>
+            <span id="status" style="margin-left:12px;"></span>
+        </div>
+
+        <!-- Postmonger (SFMC) -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/postmonger/0.0.14/postmonger.js"></script>
+        <script src="./customActivity.js"></script>
+    </body>
+</html>

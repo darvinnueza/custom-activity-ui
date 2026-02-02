@@ -1,0 +1,43 @@
+{
+    "workflowApiVersion": "1.1",
+    "metaData": {
+        "icon": "images/icon40.png",
+        "category": "custom",
+        "isConfigured": false,
+        "configOnDrop": true
+    },
+    "type": "REST",
+    "lang": {
+        "es-EC": {
+        "name": "VoiceBot - Custom Activity",
+        "description": "Ejecuta lógica outbound para VoiceBot"
+        }
+    },
+    "arguments": {
+        "execute": {
+        "inArguments": [
+            { "request_id": "{{Event.request_id}}" },
+            { "contact_key": "{{Event.contact_key}}" },
+            { "msisdn": "{{Event.msisdn}}" },
+            { "status": "{{Event.status}}" }
+        ],
+        "outArguments": [],
+        "timeout": 20000,
+        "retryCount": 0,
+        "retryDelay": 1000,
+        "concurrentRequests": 6,
+        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
+        }
+    },
+    "configurationArguments": {
+        "applicationExtensionKey": "__APP_EXTENSION_KEY__"
+    },
+    "userInterfaces": {
+        "configModal": {
+        "url": "https://custom-activity-ui-two.vercel.app/index.html",
+        "height": 600,
+        "width": 900,
+        "fullscreen": false
+        }
+    }
+}
