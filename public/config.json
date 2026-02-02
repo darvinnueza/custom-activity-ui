@@ -16,7 +16,7 @@
         "inArguments": [
           { "request_id": "{{Event.request_id}}" },
           { "contact_key": "{{Event.contact_key}}" },
-          { "phone_number": "{{Event.phone_number}}" },
+          { "msisdn": "{{Event.msisdn}}" },
           { "status": "{{Event.status}}" },
           { "created_at": "{{Event.created_at}}" },
           { "updated_at": "{{Event.updated_at}}" }
