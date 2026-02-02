@@ -4,30 +4,15 @@ const connection = new Postmonger.Session();
 let payload = {};
 let DIVISION_ID;
 let INTERNAL_TOKEN;
-let AUTH_TOKEN_JWT; 
 
-// SECCIÓN DE VALIDACIÓN (Al inicio del archivo)
-connection.on('initActivity', async function (data) {
-    if (data && data.jwt) {
-        AUTH_TOKEN_JWT = data.jwt; 
-
-        try {
-            // Llamamos a nuestra API para validar e imprimir el log
-            const res = await fetch('/api/auth/validate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: AUTH_TOKEN_JWT })
-            });
-
-            if (res.ok) {
-                // Si todo está bien, mostramos el formulario
-                document.body.style.display = "block";
-            } else {
-                throw new Error("Acceso no autorizado");
-            }
-        } catch (err) {
-            document.documentElement.innerHTML = "<h1>403 - Error de Firma JWT</h1>";
-        }
+// 1. SECCIÓN DE INICIO (Simplificada al máximo)
+connection.on('initActivity', function (data) {
+    // Mostramos el formulario inmediatamente, sin preguntar nada a nadie
+    document.body.style.display = "block";
+    
+    if (data) {
+        payload = data;
+        console.log("Datos iniciales recibidos:", data);
     }
 });
 
@@ -73,6 +58,8 @@ async function initEnv() {
         INTERNAL_TOKEN = env.INTERNAL_TOKEN;
         
         await loadContactLists();
+        
+        // Avisamos a Salesforce que estamos listos
         connection.trigger('ready');
     } catch (err) {
         console.error("Error inicial:", err);
@@ -87,11 +74,11 @@ async function createContactList() {
     btnCreateList.disabled = true; 
 
     try {
+        // Quitamos la cabecera X-SFMC-JWT porque ya no la necesitamos
         const res = await fetch(`/api/genesys/contactlists/create`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${INTERNAL_TOKEN}`,
-                "X-SFMC-JWT": AUTH_TOKEN_JWT, 
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -122,10 +109,10 @@ async function createContactList() {
 
 async function loadContactLists(selectIdToSet = "") {
     try {
+        // Quitamos la cabecera X-SFMC-JWT también de aquí
         const res = await fetch(`/api/genesys/contactlists?divisionId=${DIVISION_ID}`, {
             headers: { 
-                "Authorization": `Bearer ${INTERNAL_TOKEN}`,
-                "X-SFMC-JWT": AUTH_TOKEN_JWT 
+                "Authorization": `Bearer ${INTERNAL_TOKEN}`
             }
         });
         const data = await res.json();
