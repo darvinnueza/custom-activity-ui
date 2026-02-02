@@ -1,53 +1,40 @@
 {
     "workflowApiVersion": "1.1",
     "metaData": {
-        "icon": "https://custom-activity-ui-tau.vercel.app/images/icon40.png",
+        "icon": "images/icon40.png",
         "category": "message"
     },
     "type": "REST",
     "lang": {
         "en-US": {
-            "name": "Custom Activity Demo",
-            "description": "Custom Activity Demo"
+            "name": "Genesys Activity",
+            "description": "Integración con Genesys"
         }
     },
     "arguments": {
         "execute": {
-        "inArguments": [
-            { "request_id": "{{Event.request_id}}" },
-            { "contact_key": "{{Event.contact_key}}" },
-            { "msisdn": "{{Event.msisdn}}" },
-            { "status": "{{Event.status}}" }
-        ],
-        "outArguments": [],
-            "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
+            "inArguments": [],
+            "outArguments": [],
+            "url": "https://custom-activity-service.vercel.app/api/sfmc/execute",
+            "verb": "POST",
+            "body": "",
+            "header": "",
+            "format": "json",
+            "useJwt": false,
+            "timeout": 10000
         }
     },
     "configurationArguments": {
         "applicationExtensionKey": "05f65280-c152-4616-9353-c170dd275157",
-        "save": {
-            "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
-            "useJwt": false
-        },
-        "publish": {
-            "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
-            "useJwt": false
-        },
-        "validate": {
-            "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
-            "useJwt": false
-        },
-        "stop": {
-            "url": "https://custom-activity-service.vercel.app/api/sfmc/stop",
-            "useJwt": false
-        }
+        "save": { "url": "https://custom-activity-service.vercel.app/api/sfmc/save" },
+        "publish": { "url": "https://custom-activity-service.vercel.app/api/sfmc/publish" },
+        "validate": { "url": "https://custom-activity-service.vercel.app/api/sfmc/validate" }
     },
     "userInterfaces": {
         "configModal": {
-            "url": "https://custom-activity-ui-tau.vercel.app/",
-            "height": 600,
-            "width": 800,
-            "fullscreen": false
+            "url": "index.html",
+            "height": 400,
+            "width": 600
         }
     }
 }
