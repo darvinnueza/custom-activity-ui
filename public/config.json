@@ -26,7 +26,7 @@
     }
   },
   "configurationArguments": {
-    "applicationExtensionKey": "c1dad13e-ef98-4d7b-887b-f9b75991f479",
+    "applicationExtensionKey": "05f65280-c152-4616-9353-c170dd275157",
     "save": {
       "url": "https://sfmc-custom-activity-vercel.vercel.app/api/save",
       "useJwt": false
