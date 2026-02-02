@@ -22,31 +22,31 @@
           { "updated_at": "{{Event.updated_at}}" }
         ],
         "outArguments": [],
-        "url": "https://sfmc-custom-activity-vercel.vercel.app/api/execute"
+        "url": "https://custom-activity-service.vercel.app/api/sfmc/execute"
     }
   },
   "configurationArguments": {
     "applicationExtensionKey": "366758bd-3a42-493d-af36-723b782bcfde",
     "save": {
-      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/save",
+      "url": "https://custom-activity-service.vercel.app/api/sfmc/save",
       "useJwt": false
     },
     "publish": {
-      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/publish",
+      "url": "https://custom-activity-service.vercel.app/api/sfmc/publish",
       "useJwt": false
     },
     "validate": {
-      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/validate",
+      "url": "https://custom-activity-service.vercel.app/api/sfmc/validate",
       "useJwt": false
     },
     "stop": {
-      "url": "https://sfmc-custom-activity-vercel.vercel.app/api/stop",
+      "url": "https://custom-activity-service.vercel.app/stop",
       "useJwt": false
     }
   },
   "userInterfaces": {
     "configModal": {
-      "url": "https://sfmc-custom-activity-vercel.vercel.app/",
+      "url": "https://custom-activity-service.vercel.app/",
       "height": 600,
       "width": 800,
       "fullscreen": false
