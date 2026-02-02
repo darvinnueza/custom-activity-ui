@@ -5,74 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Custom Activity UI — VoiceBot</title>
 
-    <style>
-      /* Mantiene el formulario oculto por defecto para seguridad */
-      body { display: none; } 
-    </style>
-
     <link rel="stylesheet" href="styles.css" />
+
+    <style>
+      /* Mensaje 403 visible por defecto */
+      #forbidden {
+        font-family: sans-serif;
+        text-align: center;
+        padding-top: 80px;
+      }
+
+      /* UI real OCULTA por defecto */
+      #app {
+        display: none;
+      }
+    </style>
   </head>
 
   <body>
-    <div class="app-header">Custom Activity UI — VoiceBot</div>
 
-    <div class="container">
-      <div class="card">
-        <section id="stepContact">
-          <h2>Configuración de Lista de Contactos</h2>
-          <p class="subtitle">Elige una lista de contactos existente o define una nueva.</p>
-          
-          <label for="contactListSelect">Lista de Contactos Existente</label>
-          <select id="contactListSelect"><option>Cargando...</option></select>
+    <!-- MENSAJE POR DEFECTO -->
+    <div id="forbidden">
+      <h1 style="color:#c00;">403 - Acceso Denegado</h1>
+      <p>
+        Esta aplicación solo es accesible desde
+        <strong>Salesforce Marketing Cloud (Journey Builder)</strong>.
+      </p>
+    </div>
 
-          <div class="checkbox">
-            <input type="checkbox" id="newListCheck" />
-            <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
-          </div>
+    <!-- APP REAL -->
+    <div id="app">
+      <div class="app-header">Custom Activity UI — VoiceBot</div>
 
-          <label for="newListName">Nombre de la Nueva Lista</label>
-          <div class="inline-create">
-            <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
-            <button id="btnCreateList" type="button" disabled>Crear Lista</button>
-          </div>
-          <small id="createStatus" class="status"></small>
+      <div class="container">
+        <div class="card">
+          <section id="stepContact">
+            <h2>Configuración de Lista de Contactos</h2>
+            <p class="subtitle">
+              Elige una lista de contactos existente o define una nueva.
+            </p>
 
-          <div class="nav">
-            <button id="btnNext" type="button" disabled>Siguiente</button>
-          </div>
-        </section>
+            <label for="contactListSelect">Lista de Contactos Existente</label>
+            <select id="contactListSelect">
+              <option>Cargando...</option>
+            </select>
 
-        <section id="stepCampaign" style="display:none;">
-          <h2>Configuración de Campaña</h2>
-          <select id="campaignSelect"><option value="">Cargando...</option></select>
-          <div class="nav">
-            <button id="btnBack" type="button">Atrás</button>
-          </div>
-        </section>
+            <div class="checkbox">
+              <input type="checkbox" id="newListCheck" />
+              <label for="newListCheck">
+                Definir una Nueva Lista de Contactos
+              </label>
+            </div>
+
+            <label for="newListName">Nombre de la Nueva Lista</label>
+            <div class="inline-create">
+              <input
+                id="newListName"
+                type="text"
+                placeholder="Ingrese el nombre..."
+              />
+              <button id="btnCreateList" type="button" disabled>
+                Crear Lista
+              </button>
+            </div>
+
+            <small id="createStatus" class="status"></small>
+
+            <div class="nav">
+              <button id="btnNext" type="button" disabled>
+                Siguiente
+              </button>
+            </div>
+          </section>
+
+          <section id="stepCampaign" style="display:none;">
+            <h2>Configuración de Campaña</h2>
+            <select id="campaignSelect">
+              <option value="">Cargando...</option>
+            </select>
+            <div class="nav">
+              <button id="btnBack" type="button">Atrás</button>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
 
     <script src="js/postmonger.js"></script>
     <script src="js/customActivity.js"></script>
-    
-    <script>
-      (function() {
-        // Validación básica de iFrame (Punto 3 de Salesforce)
-        const esIframe = window.self !== window.top;
-        const vieneDeSFMC = document.referrer.includes("exacttarget.com") || 
-                            document.referrer.includes("marketingcloudapps.com");
 
-        if (!esIframe || !vieneDeSFMC) {
-          document.documentElement.innerHTML = `
-            <body style="font-family:sans-serif; text-align:center; padding-top:50px;">
-              <h1 style="color:red;">403 - Acceso Denegado</h1>
-              <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud.</p>
-            </body>`;
-          throw new Error("Acceso no autorizado");
-        }
-        // NOTA: No hacemos "display: block" aquí. 
-        // Lo hará el ui.js después de validar el JWT con el servidor.
-      })();
+    <script>
+      /* SOLO si estamos en iframe (Journey Builder) mostramos la app */
+      if (window.self !== window.top) {
+        document.getElementById("forbidden").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      }
     </script>
 
     <script src="js/ui.js"></script>
