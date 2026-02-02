@@ -11,14 +11,8 @@ connection.on('initActivity', async function (data) {
     if (data && data.jwt) {
         AUTH_TOKEN_JWT = data.jwt; 
 
-        // 1. ESTA ES LA PRUEBA REINA: Mostrará el token en una ventana emergente en Salesforce
-        alert("TOKEN RECIBIDO: " + AUTH_TOKEN_JWT); 
-
-        // 2. También lo imprimimos en la consola del navegador (F12)
-        console.log("JWT de Salesforce:", AUTH_TOKEN_JWT);
-
         try {
-            // Llamamos a nuestra API para intentar loguearlo en el servidor
+            // Llamamos a nuestra API para validar e imprimir el log
             const res = await fetch('/api/auth/validate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -26,18 +20,14 @@ connection.on('initActivity', async function (data) {
             });
 
             if (res.ok) {
-                // Si el servidor valida el secreto, mostramos la UI
+                // Si todo está bien, mostramos el formulario
                 document.body.style.display = "block";
             } else {
                 throw new Error("Acceso no autorizado");
             }
         } catch (err) {
-            // Si el secreto en Vercel no coincide, verás este error
             document.documentElement.innerHTML = "<h1>403 - Error de Firma JWT</h1>";
         }
-    } else {
-        // Si Salesforce no envía el JWT, bloqueamos el acceso
-        document.documentElement.innerHTML = "<h1>401 - No se recibió JWT de Salesforce</h1>";
     }
 });
 
