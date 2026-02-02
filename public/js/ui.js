@@ -3,6 +3,13 @@ let payload = {};
 let DIVISION_ID;
 let INTERNAL_TOKEN;
 
+// ==============================
+// UI ELEMENTS
+// ==============================
+let stepContact, stepCampaign;
+let selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus;
+let campaignSelect;
+
 async function loadContactLists(selectIdToSet = "") {
     selectContactLists.innerHTML = "<option>Cargando...</option>";
     try {
@@ -56,6 +63,24 @@ async function createContactList() {
         setStatus(err.message, "err");
     }
 }
+
+// Escuchar el clic en el botón "Siguiente" de la interfaz de Salesforce
+connection.on('clickedNext', function () {
+    if (stepContact.style.display !== 'none') {
+        // Si estamos en el paso 1, intentamos pasar al 2
+        const selectedListId = selectContactLists?.value || "";
+        if (selectedListId) {
+            goToCampaignStep();
+            connection.trigger('ready'); 
+        } else {
+            setStatus("Seleccione o cree una lista antes de continuar.", "err");
+            connection.trigger('ready');
+        }
+    } else {
+        // Si ya estamos en el paso de campaña, guardamos todo
+        save();
+    }
+});
 
 // ==============================
 // INIT
