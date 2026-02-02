@@ -1,129 +1,133 @@
 /* global Postmonger */
 
+// ==============================
+// POSTMONGER CONFIG
+// ==============================
 const connection = new Postmonger.Session();
 let payload = {};
-let DIVISION_ID = "";
-let INTERNAL_TOKEN = "";
-
-// Elementos del DOM
-const stepContact = document.getElementById("stepContact");
-const stepCampaign = document.getElementById("stepCampaign");
-const contactSelect = document.getElementById("contactListSelect");
-const campaignSelect = document.getElementById("campaignSelect");
-const chkNewList = document.getElementById("newListCheck");
-const inputNewList = document.getElementById("newListName");
-const btnCreateList = document.getElementById("btnCreateList");
-const btnNext = document.getElementById("btnNext");
-const btnBack = document.getElementById("btnBack");
-const createStatus = document.getElementById("createStatus");
+let DIVISION_ID;
+let INTERNAL_TOKEN;
 
 // ==============================
-// 1. INICIALIZACIÓN
+// UI ELEMENTS
 // ==============================
-document.addEventListener("DOMContentLoaded", async () => {
-    
-    // ASEGURAR ESTADO INICIAL: Input de texto bloqueado por defecto
-    inputNewList.disabled = true;
-    btnCreateList.disabled = true;
+let stepContact, stepCampaign;
+let selectContactLists, chkNewList, inputNewList, btnCreateList, createStatus;
+let campaignSelect;
 
-    // ESCUCHAR EL CHECKBOX: Aquí es donde controlamos el "Tipeo"
-    chkNewList.addEventListener("change", () => {
-        const isChecked = chkNewList.checked;
-        
-        // Si el check es true -> habilita input. Si es false -> bloquea input.
-        inputNewList.disabled = !isChecked;
-        
-        // El selector de arriba se bloquea si vamos a crear una nueva
-        contactSelect.disabled = isChecked;
-        
-        if (isChecked) {
-            // Limpia el input por si acaso y pone el foco
-            inputNewList.value = "";
-            inputNewList.focus();
-            // Mientras el check esté activo, el botón Siguiente se bloquea 
-            // porque el usuario prometió crear una lista nueva.
-            btnNext.disabled = true;
+// ==============================
+// 1. INITIALIZATION (Postmonger)
+// ==============================
+connection.on('initActivity', function (data) {
+    if (data) {
+        payload = data;
+    }
+    console.log("Payload inicial de SFMC:", payload);
+});
+
+connection.on('clickedNext', function () {
+    if (stepContact.style.display !== 'none') {
+        const selectedListId = selectContactLists?.value || "";
+        if (selectedListId) {
+            goToCampaignStep();
+            connection.trigger('ready'); 
         } else {
-            // Si desmarca, el botón siguiente depende de si seleccionó algo arriba
-            btnNext.disabled = !contactSelect.value;
-            inputNewList.value = ""; // Limpia el texto si se arrepiente
+            setStatus("Seleccione o cree una lista antes de continuar.", "err");
+            connection.trigger('ready');
         }
-    });
-
-    // Validar el botón "Crear Lista" solo cuando se escribe y el check está activo
-    inputNewList.addEventListener("input", () => {
-        const hasText = inputNewList.value.trim().length > 0;
-        btnCreateList.disabled = !chkNewList.checked || !hasText;
-    });
-
-    // Validar selector normal (Paso 1)
-    contactSelect.addEventListener("change", () => {
-        if (!chkNewList.checked) {
-            btnNext.disabled = !contactSelect.value;
-        }
-    });
-
-    // Cargar entorno
-    try {
-        const res = await fetch("/api/env");
-        const env = await res.json();
-        DIVISION_ID = env.DIVISION_ID;
-        INTERNAL_TOKEN = env.INTERNAL_TOKEN;
-        
-        await loadContactLists();
-        connection.trigger('ready');
-    } catch (e) {
-        console.error("Error inicializando:", e);
+    } else {
+        save();
     }
 });
 
 // ==============================
-// 2. NAVEGACIÓN
+// 2. SAVE LOGIC
 // ==============================
-btnNext.onclick = () => {
-    stepContact.style.display = "none";
-    stepCampaign.style.display = "block";
-    loadCampaigns();
-};
+function save() {
+    const selectedListId = selectContactLists.value;
+    const selectedCampaignId = campaignSelect.value;
 
-btnBack.onclick = () => {
-    stepContact.style.display = "block";
-    stepCampaign.style.display = "none";
-};
+    if (!selectedCampaignId) {
+        setStatus("Seleccione una campaña para finalizar.", "err");
+        connection.trigger('ready');
+        return;
+    }
+
+    // Usar la EventDefinitionKey dinámica para que los datos se vinculen bien en SFMC
+    const eventKey = payload.metaData.eventDefinitionKey;
+
+    payload['arguments'].execute.inArguments = [{
+        "request_id": "{{Event." + eventKey + ".request_id}}",
+        "contact_key": "{{Contact.Key}}",
+        "msisdn": "{{Event." + eventKey + ".msisdn}}",
+        "status": "ready",
+        "genesysListId": selectedListId,
+        "genesysCampaignId": selectedCampaignId
+    }];
+
+    payload['metaData'].isConfigured = true;
+    connection.trigger('updateActivity', payload);
+}
 
 // ==============================
-// 3. API GENESYS
+// 3. UI HELPERS & API
 // ==============================
-async function loadContactLists(selectedId = "") {
-    contactSelect.innerHTML = "<option>Cargando listas...</option>";
+
+function setStatus(msg, type) {
+    if (!createStatus) return;
+    createStatus.textContent = msg || "";
+    createStatus.className = "status-message " + (type || "");
+}
+
+function showStep(step) {
+    stepContact.style.display = step === "contact" ? "block" : "none";
+    stepCampaign.style.display = step === "campaign" ? "block" : "none";
+}
+
+function setNewListMode(enabled) {
+    if (!chkNewList) return;
+    selectContactLists.disabled = enabled;
+    inputNewList.disabled = !enabled;
+    // Solo habilitar botón si está el check Y hay texto
+    btnCreateList.disabled = !enabled || inputNewList.value.trim().length === 0;
+    if (enabled) {
+        inputNewList.focus();
+    } else {
+        inputNewList.value = "";
+    }
+}
+
+async function loadContactLists(selectIdToSet = "") {
+    selectContactLists.innerHTML = "<option>Cargando...</option>";
     try {
-        const res = await fetch(`/api/genesys/contactlists?divisionId=${DIVISION_ID}`, {
+        const res = await fetch(`/api/genesys/contactlists?divisionId=${encodeURIComponent(DIVISION_ID)}`, {
             headers: { "Authorization": `Bearer ${INTERNAL_TOKEN}` }
         });
         const data = await res.json();
-        
-        contactSelect.innerHTML = '<option value="">-- Seleccione una lista --</option>';
-        (data.entities || []).forEach(list => {
-            const opt = new Option(list.name, list.id);
-            contactSelect.add(opt);
+        const items = data.entities || [];
+
+        selectContactLists.innerHTML = `<option value="">-- Seleccione una lista --</option>`;
+        items.forEach(item => {
+            const opt = new Option(item.name, item.id);
+            selectContactLists.add(opt);
         });
 
-        if (selectedId) contactSelect.value = selectedId;
-        
-        // Si no hay check de nueva lista, validamos el botón siguiente
-        if (!chkNewList.checked) {
-            btnNext.disabled = !contactSelect.value;
-        }
+        if (selectIdToSet) selectContactLists.value = selectIdToSet;
+        selectContactLists.disabled = false;
     } catch (err) {
-        createStatus.textContent = "Error al cargar listas.";
+        setStatus("Error cargando listas de Genesys", "err");
     }
 }
 
 async function createContactList() {
     const name = inputNewList.value.trim();
-    createStatus.textContent = "Creando lista en Genesys...";
-    
+    if (!name) return;
+
+    setStatus("Creando lista...", "");
+    btnCreateList.disabled = true; // Evitar clicks múltiples
+
     try {
+        // CORRECCIÓN: URL exacta del Swagger
         const res = await fetch(`/api/genesys/contactlists`, {
             method: "POST",
             headers: {
@@ -139,68 +143,86 @@ async function createContactList() {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error al crear lista");
+        if (!res.ok) throw new Error(data.message || "Error API");
 
-        createStatus.textContent = "¡Lista creada!";
+        setStatus("¡Lista creada!", "ok");
         
-        // RESET AUTOMÁTICO TRAS CREACIÓN
+        // Volver al modo normal tras éxito
         chkNewList.checked = false;
-        inputNewList.disabled = true;
-        inputNewList.value = "";
-        btnCreateList.disabled = true;
-        contactSelect.disabled = false;
+        setNewListMode(false);
         
-        await loadContactLists(data.id); // Recarga y selecciona la nueva automáticamente
+        // Recargar y seleccionar la nueva
+        await loadContactLists(data.id);
+        
     } catch (err) {
-        createStatus.textContent = "Error: " + err.message;
+        setStatus("Error: " + err.message, "err");
+        btnCreateList.disabled = false;
     }
 }
 
 async function loadCampaigns() {
     campaignSelect.innerHTML = "<option>Cargando campañas...</option>";
     try {
-        const res = await fetch(`/api/genesys/campaigns?divisionId=${DIVISION_ID}`, {
+        const res = await fetch(`/api/genesys/campaigns?divisionId=${encodeURIComponent(DIVISION_ID)}`, {
             headers: { "Authorization": `Bearer ${INTERNAL_TOKEN}` }
         });
         const data = await res.json();
-        campaignSelect.innerHTML = '<option value="">-- Seleccione una campaña --</option>';
-        (data.entities || []).forEach(camp => {
-            campaignSelect.add(new Option(camp.name, camp.id));
+        campaignSelect.innerHTML = `<option value="">-- Seleccione una campaña --</option>`;
+        (data.entities || []).forEach(c => {
+            campaignSelect.add(new Option(c.name, c.id));
         });
+        campaignSelect.disabled = false;
     } catch (err) {
-        console.error("Error al cargar campañas");
+        setStatus("Error cargando campañas", "err");
     }
 }
 
-// ==============================
-// 4. SALESFORCE (POSTMONGER)
-// ==============================
-connection.on('initActivity', (data) => { if (data) payload = data; });
+function goToCampaignStep() {
+    showStep("campaign");
+    loadCampaigns();
+}
 
-connection.on('clickedNext', () => {
-    if (stepCampaign.style.display !== "none") save();
-    else connection.trigger('ready');
-});
+// ==============================
+// INIT
+// ==============================
+async function initEnv() {
+    stepContact = document.getElementById("stepContact");
+    stepCampaign = document.getElementById("stepCampaign");
+    selectContactLists = document.getElementById("contactListSelect");
+    chkNewList = document.getElementById("newListCheck");
+    inputNewList = document.getElementById("newListName");
+    btnCreateList = document.getElementById("btnCreateList");
+    createStatus = document.getElementById("createStatus");
+    campaignSelect = document.getElementById("campaignSelect");
 
-function save() {
-    if (!campaignSelect.value) {
-        alert("Por favor, seleccione una campaña.");
+    // Estado inicial: Input bloqueado hasta que se use el check
+    inputNewList.disabled = true;
+    btnCreateList.disabled = true;
+
+    chkNewList.addEventListener("change", function() {
+        setNewListMode(chkNewList.checked);
+    });
+    
+    // Conexión explícita del click del botón
+    btnCreateList.onclick = function() {
+        createContactList();
+    };
+    
+    inputNewList.addEventListener("input", function() {
+        btnCreateList.disabled = !chkNewList.checked || inputNewList.value.trim().length === 0;
+    });
+
+    try {
+        const res = await fetch("/api/env");
+        const env = await res.json();
+        DIVISION_ID = env.DIVISION_ID;
+        INTERNAL_TOKEN = env.INTERNAL_TOKEN;
+        
+        await loadContactLists();
         connection.trigger('ready');
-        return;
+    } catch (err) {
+        console.error("Error de inicialización:", err);
     }
-
-    // Usar la EventDefinitionKey dinámica del payload de SFMC
-    const eventKey = payload.metaData.eventDefinitionKey;
-
-    payload['arguments'].execute.inArguments = [{
-        "requestId": "{{Event." + eventKey + ".request_id}}",
-        "contactKey": "{{Contact.Key}}",
-        "msisdn": "{{Event." + eventKey + ".msisdn}}",
-        "contactListId": contactSelect.value,
-        "campaignId": campaignSelect.value,
-        "status": "NEW"
-    }];
-
-    payload['metaData'].isConfigured = true;
-    connection.trigger('updateActivity', payload);
 }
+
+document.addEventListener("DOMContentLoaded", initEnv);
