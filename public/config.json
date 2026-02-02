@@ -1,7 +1,7 @@
 {
     "workflowApiVersion": "1.1",
     "metaData": {
-        "icon": "images/icon40.png",
+        "icon": "https://custom-activity-ui-tau.vercel.app/images/icon40.png?v=1",
         "category": "custom"
     },
     "type": "REST",
