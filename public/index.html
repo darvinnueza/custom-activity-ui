@@ -5,35 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Custom Activity UI — VoiceBot</title>
 
-    <link rel="stylesheet" href="styles.css" />
-
+    <!-- IMPORTANTE: NO ocultamos el body. Mostramos 403 por defecto -->
     <style>
-      /* Mensaje 403 visible por defecto */
-      #forbidden {
-        font-family: sans-serif;
-        text-align: center;
-        padding-top: 80px;
-      }
-
-      /* UI real OCULTA por defecto */
-      #app {
-        display: none;
-      }
+      body { margin: 0; font-family: sans-serif; }
+      #forbidden { text-align: center; padding-top: 80px; }
+      #app { display: none; }
     </style>
+
+    <link rel="stylesheet" href="/styles.css" />
   </head>
 
   <body>
-
-    <!-- MENSAJE POR DEFECTO -->
+    <!-- 403 visible por defecto -->
     <div id="forbidden">
       <h1 style="color:#c00;">403 - Acceso Denegado</h1>
-      <p>
-        Esta aplicación solo es accesible desde
-        <strong>Salesforce Marketing Cloud (Journey Builder)</strong>.
-      </p>
+      <p>Esta aplicación solo es accesible desde Salesforce Marketing Cloud (Journey Builder).</p>
     </div>
 
-    <!-- APP REAL -->
+    <!-- APP real (oculta hasta estar en iframe) -->
     <div id="app">
       <div class="app-header">Custom Activity UI — VoiceBot</div>
 
@@ -41,48 +30,32 @@
         <div class="card">
           <section id="stepContact">
             <h2>Configuración de Lista de Contactos</h2>
-            <p class="subtitle">
-              Elige una lista de contactos existente o define una nueva.
-            </p>
+            <p class="subtitle">Elige una lista de contactos existente o define una nueva.</p>
 
             <label for="contactListSelect">Lista de Contactos Existente</label>
-            <select id="contactListSelect">
-              <option>Cargando...</option>
-            </select>
+            <select id="contactListSelect"><option>Cargando...</option></select>
 
             <div class="checkbox">
               <input type="checkbox" id="newListCheck" />
-              <label for="newListCheck">
-                Definir una Nueva Lista de Contactos
-              </label>
+              <label for="newListCheck">Definir una Nueva Lista de Contactos</label>
             </div>
 
             <label for="newListName">Nombre de la Nueva Lista</label>
             <div class="inline-create">
-              <input
-                id="newListName"
-                type="text"
-                placeholder="Ingrese el nombre..."
-              />
-              <button id="btnCreateList" type="button" disabled>
-                Crear Lista
-              </button>
+              <input id="newListName" type="text" placeholder="Ingrese el nombre..." />
+              <button id="btnCreateList" type="button" disabled>Crear Lista</button>
             </div>
 
             <small id="createStatus" class="status"></small>
 
             <div class="nav">
-              <button id="btnNext" type="button" disabled>
-                Siguiente
-              </button>
+              <button id="btnNext" type="button" disabled>Siguiente</button>
             </div>
           </section>
 
           <section id="stepCampaign" style="display:none;">
             <h2>Configuración de Campaña</h2>
-            <select id="campaignSelect">
-              <option value="">Cargando...</option>
-            </select>
+            <select id="campaignSelect"><option value="">Cargando...</option></select>
             <div class="nav">
               <button id="btnBack" type="button">Atrás</button>
             </div>
@@ -91,17 +64,16 @@
       </div>
     </div>
 
-    <script src="js/postmonger.js"></script>
-    <script src="js/customActivity.js"></script>
-
+    <!-- Si es iframe (Journey Builder), mostramos la app -->
     <script>
-      /* SOLO si estamos en iframe (Journey Builder) mostramos la app */
       if (window.self !== window.top) {
         document.getElementById("forbidden").style.display = "none";
         document.getElementById("app").style.display = "block";
       }
     </script>
 
-    <script src="js/ui.js"></script>
+    <script src="/js/postmonger.js"></script>
+    <script src="/js/customActivity.js"></script>
+    <script src="/js/ui.js"></script>
   </body>
 </html>
