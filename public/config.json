@@ -7,8 +7,8 @@
   "type": "REST",
   "lang": {
     "en-US": {
-      "name": "Vercel Demo Activity",
-      "description": "Demo REST Activity hosted on Vercel"
+      "name": "Custom Activity Demo",
+      "description": "Custom Activity Demo"
     }
   },
   "arguments": {
@@ -16,10 +16,8 @@
         "inArguments": [
           { "request_id": "{{Event.request_id}}" },
           { "contact_key": "{{Event.contact_key}}" },
-          { "phone_number": "{{Event.phone_number}}" },
-          { "status": "{{Event.status}}" },
-          { "created_at": "{{Event.created_at}}" },
-          { "updated_at": "{{Event.updated_at}}" }
+          { "msisdn": "{{Event.msisdn}}" },
+          { "status": "{{Event.status}}" }
         ],
         "outArguments": [],
         "url": "https://sfmc-custom-activity-vercel.vercel.app/api/execute"
